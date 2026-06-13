@@ -1,4 +1,4 @@
-name: QuantumROM Tools Sixteen (IMEI)
+name: QuantumROM Tools Sixteen (Serial)
 
 on:
   workflow_dispatch:
@@ -6,27 +6,27 @@ on:
       STOCK_DEVICE:
         description: "STOCK_DEVICE_MODEL or None"
         required: true
-        default: "SM-A137F"
+        default: "SM-P613"
       USE_UI_8_TETHERING_APEX:
-        description: "Set True if your kernel BPF version is 5.4 (lower than 5.10)"
+        description: "Set True if your kernel BPF version is 5.4 (lower than 5.10)."
         required: true
-        default: "True"
+        default: "False"
       TARGET_DEVICE:
-        description: "TARGET_DEVICE_MODEL"
+        description: "TARGET_DEVICE_MODEL."
         required: true
-        default: "SM-A155F"
+        default: "SM-X210"
       TARGET_DEVICE_CSC:
         description: "TARGET_DEVICE_CSC."
         required: true
         default: "EUX"
       TARGET_DEVICE_IMEI:
-        description: "TARGET_DEVICE_IMEI"
+        description: "TARGET_DEVICE_IMEI."
         required: true
-        default: "35843873"
+        default: "R9TY4053SDE"
       OUTPUT_FILESYSTEM:
         description: "OUTPUT_FILESYSTEM. e.g erofs / ext4 / f2fs"
         required: true
-        default: "ext4"
+        default: "erofs"
       COMPRESS_IMG_TO_XZ:
         description: "Compress IMG to XZ (True/False)"
         required: true
@@ -62,12 +62,12 @@ jobs:
 
       - name: Download firmware ▶️ ${{ github.event.inputs.TARGET_DEVICE }} - ${{ github.event.inputs.TARGET_DEVICE_CSC }}
         run: |
-          source scripts/QuantumRom.sh
+          source scripts/QuantumRom-serial.sh
           DOWNLOAD_FIRMWARE "${{ github.event.inputs.TARGET_DEVICE }}" "${{ github.event.inputs.TARGET_DEVICE_CSC }}" "${{ github.event.inputs.TARGET_DEVICE_IMEI }}" "FW" "${{ github.event.inputs.TARGET_FW_VERSION }}"
 
       - name: Extract firmware
         run: |
-          source scripts/QuantumRom.sh
+          source scripts/QuantumRom-serial.sh
           EXTRACT_FIRMWARE "FW/${{ github.event.inputs.TARGET_DEVICE }}"
 
       - name: Start Rom Build For ${{ github.event.inputs.STOCK_DEVICE }}
