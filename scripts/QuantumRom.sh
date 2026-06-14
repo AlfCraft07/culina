@@ -614,7 +614,7 @@ DECOMPILE() {
     echo -e "Decompiling: $FILE"
 
 	if [ ! -f "$FILE" ]; then
-        echo -e "-File not found: $FILE"
+        echo -e "- File not found: $FILE"
         return 1
     fi
 
@@ -649,7 +649,7 @@ RECOMPILE() {
     echo -e "Recompiling: $DECOMPILED_DIR"
 
 	if [ ! -d "$DECOMPILED_DIR" ]; then
-        echo -e "-Directory not found: $DECOMPILED_DIR"
+        echo -e "- Directory not found: $DECOMPILED_DIR"
         return 1
     fi
 
