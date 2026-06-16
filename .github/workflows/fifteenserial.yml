@@ -14,7 +14,7 @@ on:
       TARGET_DEVICE:
         description: "TARGET_DEVICE_MODEL."
         required: true
-        default: "SM-X210"
+        default: "SM-T630"
       TARGET_DEVICE_CSC:
         description: "TARGET_DEVICE_CSC."
         required: true
@@ -22,11 +22,11 @@ on:
       TARGET_DEVICE_IMEI:
         description: "TARGET_DEVICE_IMEI."
         required: true
-        default: "R9TY4053SDE"
+        default: "R52T906ZL0P"
       TARGET_FW_VERSION:
         description: "Any specific firmware release version."
         required: false
-        default: "X210XXS9DYJ5/X210OXMDYJ5/X210XXS9DYJ5/X210XXS9DYJ5"
+        default: "T630XXSBDZE2/T630OXMBDZE2/T630XXSBDZE2/T630XXSBDZE2"
       OUTPUT_FILESYSTEM:
         description: "OUTPUT_FILESYSTEM. e.g erofs / ext4"
         required: true
