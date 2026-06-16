@@ -127,7 +127,7 @@ DOWNLOAD_FIRMWARE() {
     fi
 
     # --- Step 2: Download Firmware ---
-    python3 -m samloader -m "$MODEL" -r "$CSC" -s "$IMEI" download -v "$VERSION" -O "$DOWN_DIR"
+    python3 -m samloader -m "$MODEL" -r "$CSC" -s "$IMEI" download -v "X210XXS9DYJ5/X210OXMDYJ5/X210XXS9DYJ5/X210XXS9DYJ5" -O "$DOWN_DIR"
     if [ $? -ne 0 ]; then
         echo -e "⛔️ Download failed. Check IMEI/MODEL/CSC."
         exit 1
