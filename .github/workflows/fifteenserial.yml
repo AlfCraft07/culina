@@ -10,23 +10,23 @@ on:
       STOCK_DEVICE:
         description: "STOCK_DEVICE_MODEL or None"
         required: true
-        default: "SM-A137F"
+        default: "SM-P613"
       TARGET_DEVICE:
         description: "TARGET_DEVICE_MODEL."
         required: true
-        default: "SM-A145P"
+        default: "SM-X210"
       TARGET_DEVICE_CSC:
         description: "TARGET_DEVICE_CSC."
         required: true
-        default: "KSA"
+        default: "EUX"
       TARGET_DEVICE_IMEI:
         description: "TARGET_DEVICE_IMEI."
         required: true
-        default: "356608733000392"
+        default: "R9TY4053SDE"
       TARGET_FW_VERSION:
         description: "Any specific firmware release version."
         required: false
-        default: "A145PXXUBDZC2/A145POJMBDZC2/A145PXXUBDZC2/A145PXXUBDZC2"
+        default: "X210XXS9DYJ5/X210OXMDYJ5/X210XXS9DYJ5/X210XXS9DYJ5"
       OUTPUT_FILESYSTEM:
         description: "OUTPUT_FILESYSTEM. e.g erofs / ext4"
         required: true
@@ -59,7 +59,7 @@ jobs:
 
       - name: Download firmware ▶️ ${{ github.event.inputs.TARGET_DEVICE }} - ${{ github.event.inputs.TARGET_DEVICE_CSC }}
         run: |
-          source scripts/QuantumRom.sh
+          source scripts/QuantumRom-serial.sh
           DOWNLOAD_FIRMWARE "${{ github.event.inputs.TARGET_DEVICE }}" "${{ github.event.inputs.TARGET_DEVICE_CSC }}" "${{ github.event.inputs.TARGET_DEVICE_IMEI }}" "FIRMWARE" "${{ github.event.inputs.TARGET_FW_VERSION }}"
 
       - name: Start Rom Build For ${{ github.event.inputs.STOCK_DEVICE }}
