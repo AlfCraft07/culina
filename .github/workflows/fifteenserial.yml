@@ -1,4 +1,4 @@
-name: QuantumROM Tools OS-15 (IMEI)
+name: QuantumROM Tools OS-15 (Serial)
 
 on:
   workflow_dispatch:
