@@ -8,7 +8,7 @@ NC="\e[0m"
 REAL_USER=${SUDO_USER:-$USER}
 
 # Binary
-chmod +x $(pwd)/bin/f2fs-tools/make.f2fs
+chmod +x $(pwd)/bin/f2fs-tools/mkfs.f2fs
 chmod +x $(pwd)/bin/f2fs-tools/sload.f2fs
 chmod +x $(pwd)/bin/lp/lpunpack
 chmod +x $(pwd)/bin/ext4/make_ext4fs
