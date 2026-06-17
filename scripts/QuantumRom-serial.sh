@@ -278,7 +278,7 @@ EXTRACT_FIRMWARE_IMG() {
 
     PREPARE_PARTITIONS "$FIRM_DIR"
 
-	echo -e "${YELLOW}Extracting imges from:${NC} $FIRM_DIR"
+	echo -e "${YELLOW}Extracting images from:${NC} $FIRM_DIR"
 
     for imgfile in "$FIRM_DIR"/*.img; do
         [ -e "$imgfile" ] || continue
@@ -298,19 +298,19 @@ EXTRACT_FIRMWARE_IMG() {
         case "$fstype" in
             ext4)
                 IMG_SIZE=$(stat -c%s -- "$imgfile")
-				echo -e "- $partition.img Detected ext4. Size: $IMG_SIZE bytes. Extracting..."
+				echo -e "- $partition.img Detected $fstype. Size: $IMG_SIZE bytes. Extracting..."
                 sudo rm -rf "$FIRM_DIR/$partition"
                 sudo python3 "$(pwd)/bin/py_scripts/imgextractor.py" "$imgfile" "$FIRM_DIR"
                 ;;
             erofs)
                 IMG_SIZE=$(stat -c%s -- "$imgfile")
-				echo -e "- $partition.img Detected erofs. Size: $IMG_SIZE bytes. Extracting..."
+				echo -e "- $partition.img Detected $fstype. Size: $IMG_SIZE bytes. Extracting..."
                 sudo rm -rf "$FIRM_DIR/$partition"
                 sudo "$(pwd)/bin/erofs-utils/extract.erofs" -i "$imgfile" -x -f -o "$FIRM_DIR" >/dev/null 2>&1
                 ;;
             f2fs)
-                echo "- $partition.img Detected f2fs. Size: $IMG_SIZE bytes. Extracting..."
-                echo -e "${YELLOW}$partition.img Detected f2fs.${NC} Size: $ORG_IMG_SIZE bytes. Extracting..."
+                echo "- $partition.img Detected $fstype. Size: $IMG_SIZE bytes. Extracting..."
+                sudo rm -rf "$FIRM_DIR/$partition"
                 bash "$QT_DIR/scripts/extract_img.sh" "$imgfile" "$FIRM_DIR"
                 ;;
             *)

@@ -8,6 +8,8 @@ NC="\e[0m"
 REAL_USER=${SUDO_USER:-$USER}
 
 # Binary
+chmod +x $(pwd)/bin/f2fs-tools/mkfs.f2fs
+chmod +x $(pwd)/bin/f2fs-tools/sload.f2fs
 chmod +x $(pwd)/bin/lp/lpunpack
 chmod +x $(pwd)/bin/ext4/make_ext4fs
 chmod +x $(pwd)/bin/erofs-utils/extract.erofs
@@ -301,6 +303,11 @@ EXTRACT_FIRMWARE_IMG() {
 				echo -e "- $partition.img Detected $fstype. Size: $IMG_SIZE bytes. Extracting..."
 				sudo rm -rf "$FIRM_DIR/$partition"
                 sudo $(pwd)/bin/erofs-utils/extract.erofs -i "$imgfile" -x -f -o "$FIRM_DIR" >/dev/null 2>&1
+                ;;
+            f2fs)
+                echo "- $partition.img Detected $fstype. Size: $IMG_SIZE bytes. Extracting..."
+                echo -e "${YELLOW}$partition.img Detected f2fs.${NC} Size: $ORG_IMG_SIZE bytes. Extracting..."
+                sudo bash $(pwd)/scripts/extract_img.sh" "$imgfile" "$FIRM_DIR"
                 ;;
             *)
                 echo -e "- $imgfile unsupported filesystem type ($fstype), exiting"
@@ -1671,6 +1678,31 @@ BUILD_IMG() {
             $(pwd)/bin/ext4/make_ext4fs -l "$(awk "BEGIN {printf \"%.0f\", $SIZE * 1.1}")" -J -b 4096 -S "$FILE_CONTEXTS" -C "$FS_CONFIG"  -a "$MOUNT_POINT" -L "$PARTITION" "$OUT_IMG" "$SRC_DIR"
 			# Resize img to reduce size.
 			resize2fs -M "$OUT_IMG"
+        elif [[ "$FILE_SYSTEM" == "f2fs" ]]; then
+            echo " "
+            echo -e "${YELLOW}Building $FILE_SYSTEM image:${NC} $OUT_IMG"
+            SIZE=$(((EXTRACTED_SIZE + 511) / 512 * 512))
+            EXTENDED_SIZE=$((SIZE + SIZE / 4))
+            dd if=/dev/zero of=$OUT_IMG bs=512 count=$((EXTENDED_SIZE / 512))
+            mkfs_f2fs \
+            -f -q \
+            -g android \
+            -O extra_attr,inode_checksum,sb_checksum,compression \
+            -l "$MOUNT_POINT" \
+            "$OUT_IMG"
+            sload_f2fs \
+            -f "$SOURCE_DIR" \
+            -C "$FS_CONFIG" \
+            -s "$FILE_CONTEXTS" \
+            -t "$MOUNT_POINT" \
+            -P \
+            -c \
+            -L 2 \
+            -a lz4 \
+            "$OUT_IMG"
+            img2simg "$OUT_IMG" "${OUT_IMG}.sparse"
+            rm -rf "$OUT_IMG"
+            mv "${OUT_IMG}.sparse" "$OUT_IMG"
         else
             echo -e "Unknown filesystem: $FILE_SYSTEM, skipping $PARTITION"
             continue
