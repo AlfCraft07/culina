@@ -8,6 +8,8 @@ NC="\e[0m"
 REAL_USER=${SUDO_USER:-$USER}
 
 # Binary
+chmod +x $(pwd)/bin/f2fs-tools/make.f2fs
+chmod +x $(pwd)/bin/f2fs-tools/sload.f2fs
 chmod +x $(pwd)/bin/lp/lpunpack
 chmod +x $(pwd)/bin/ext4/make_ext4fs
 chmod +x $(pwd)/bin/erofs-utils/extract.erofs
@@ -266,6 +268,7 @@ PREPARE_PARTITIONS() {
 
 EXTRACT_FIRMWARE_IMG() {
     echo -e ""
+
 	if [ "$#" -ne 1 ]; then
         echo -e "Usage: ${FUNCNAME[0]} <FIRMWARE_DIRECTORY>"
         return 1
@@ -274,7 +277,9 @@ EXTRACT_FIRMWARE_IMG() {
 	local FIRM_DIR="$1"
 
     PREPARE_PARTITIONS "$FIRM_DIR"
+
 	echo -e "${YELLOW}Extracting imges from:${NC} $FIRM_DIR"
+
     for imgfile in "$FIRM_DIR"/*.img; do
         [ -e "$imgfile" ] || continue
 
@@ -288,22 +293,69 @@ EXTRACT_FIRMWARE_IMG() {
 
         partition="$(basename "${imgfile%.img}")"
         fstype=$(blkid -o value -s TYPE "$imgfile")
+        [ -z "$fstype" ] && fstype=$(file -b "$imgfile")
 
         case "$fstype" in
             ext4)
                 IMG_SIZE=$(stat -c%s -- "$imgfile")
-				echo -e "- $partition.img Detected $fstype. Size: $IMG_SIZE bytes. Extracting..."
-				sudo rm -rf "$FIRM_DIR/$partition"
-                sudo python3 $(pwd)/bin/py_scripts/imgextractor.py "$imgfile" "$FIRM_DIR"
+				echo -e "- $partition.img Detected ext4. Size: $IMG_SIZE bytes. Extracting..."
+                sudo rm -rf "$FIRM_DIR/$partition"
+                sudo python3 "$(pwd)/bin/py_scripts/imgextractor.py" "$imgfile" "$FIRM_DIR"
                 ;;
+
             erofs)
                 IMG_SIZE=$(stat -c%s -- "$imgfile")
-				echo -e "- $partition.img Detected $fstype. Size: $IMG_SIZE bytes. Extracting..."
-				sudo rm -rf "$FIRM_DIR/$partition"
-                sudo $(pwd)/bin/erofs-utils/extract.erofs -i "$imgfile" -x -f -o "$FIRM_DIR" >/dev/null 2>&1
+				echo -e "- $partition.img Detected erofs. Size: $IMG_SIZE bytes. Extracting..."
+                sudo rm -rf "$FIRM_DIR/$partition"
+                sudo "$(pwd)/bin/erofs-utils/extract.erofs" -i "$imgfile" -x -f -o "$FIRM_DIR" >/dev/null 2>&1
+                ;;
+
+            f2fs)
+                IMG_SIZE=$(stat -c%s -- "$imgfile")
+                echo -e "- $partition.img Detected f2fs. Converting → ext4..."
+                # --- Start inline f2fs → ext4 conversion ---
+                IMG_NAME="$imgfile"
+                IMG_DIR=$(dirname "$IMG_NAME")
+                IMG_FILE=$(basename "$IMG_NAME")
+                IMG_NAME_BASE="${IMG_FILE%.img}"
+                NEW_IMG_NAME="${IMG_DIR}/${IMG_FILE}.new"
+                SRC_MOUNT="${IMG_DIR}/${IMG_NAME_BASE}_mount"
+                DST_MOUNT="${IMG_DIR}/${IMG_NAME_BASE}"
+                # Clean previous mounts
+                sudo umount "$DST_MOUNT" 2>/dev/null
+                sudo rm -rf "$DST_MOUNT"
+                sudo umount "$SRC_MOUNT" 2>/dev/null
+                sudo rm -rf "$SRC_MOUNT"
+                # Mount source image
+                sudo mkdir -p "$SRC_MOUNT"
+                sudo mount -o loop,ro "$IMG_NAME" "$SRC_MOUNT"
+                # Calculate size (+10%)
+                MOUNT_SIZE=$(du -sb "$SRC_MOUNT" | awk '{print int($1 * 1.1)}')
+                echo "[*] Source image size (+10% buffer): $MOUNT_SIZE bytes"
+                # Create new ext4 image
+                dd if=/dev/zero of="$NEW_IMG_NAME" bs=1 count=0 seek="$MOUNT_SIZE"
+                mkfs.ext4 -F -b 4096 "$NEW_IMG_NAME"
+                # Mount new ext4 image
+                sudo mkdir -p "$DST_MOUNT"
+                sudo mount -o loop "$NEW_IMG_NAME" "$DST_MOUNT"
+                # Copy data
+                sudo cp -a --preserve "$SRC_MOUNT"/. "$DST_MOUNT"/
+                # Cleanup mounts
+                sudo umount "$DST_MOUNT"
+                sudo rm -rf "$DST_MOUNT"
+                sudo umount "$SRC_MOUNT"
+                sudo rm -rf "$SRC_MOUNT"
+                # Replace original image
+                sudo rm -f "$IMG_NAME"
+                sudo mv "$NEW_IMG_NAME" "$IMG_NAME"
+                echo "- $partition.img Converted to ext4."
+                # --- End inline f2fs → ext4 conversion ---
+                # Extract as ext4
+                sudo rm -rf "$FIRM_DIR/$partition"
+                sudo python3 "$(pwd)/bin/py_scripts/imgextractor.py" "$imgfile" "$FIRM_DIR"
                 ;;
             *)
-                echo -e "- $imgfile unsupported filesystem type ($fstype), exiting"
+                echo -e "- $partition.img unsupported filesystem type ($fstype), exiting"
                 exit 1
                 ;;
         esac
@@ -313,7 +365,7 @@ EXTRACT_FIRMWARE_IMG() {
 
 	if ! ls "$FIRM_DIR"/system* >/dev/null 2>&1; then
         echo -e "Maybe your firmware is not downloaded, is corrupt, or contains an unsupported image."
-        exit 1
+        continue
     fi
 
     sudo chown -R "$REAL_USER:$REAL_USER" "$FIRM_DIR"
@@ -1671,6 +1723,31 @@ BUILD_IMG() {
             $(pwd)/bin/ext4/make_ext4fs -l "$(awk "BEGIN {printf \"%.0f\", $SIZE * 1.1}")" -J -b 4096 -S "$FILE_CONTEXTS" -C "$FS_CONFIG"  -a "$MOUNT_POINT" -L "$PARTITION" "$OUT_IMG" "$SRC_DIR"
 			# Resize img to reduce size.
 			resize2fs -M "$OUT_IMG"
+        elif [[ "$FILE_SYSTEM" == "f2fs" ]]; then
+            echo " "
+            echo -e "${YELLOW}Building $FILE_SYSTEM image:${NC} $OUT_IMG"
+            SIZE=$(((EXTRACTED_SIZE + 511) / 512 * 512))
+            EXTENDED_SIZE=$((SIZE + SIZE / 4))
+            dd if=/dev/zero of=$OUT_IMG bs=512 count=$((EXTENDED_SIZE / 512))
+            make_f2fs \
+            -f -q \
+            -g android \
+            -O extra_attr,inode_checksum,sb_checksum,compression \
+            -l "$MOUNT_POINT" \
+            "$OUT_IMG"
+            sload_f2fs \
+            -f "$SOURCE_DIR" \
+            -C "$FS_CONFIG" \
+            -s "$FILE_CONTEXTS" \
+            -t "$MOUNT_POINT" \
+            -P \
+            -c \
+            -L 2 \
+            -a lz4 \
+            "$OUT_IMG"
+            img2simg "$OUT_IMG" "${OUT_IMG}.sparse"
+            rm -rf "$OUT_IMG"
+            mv "${OUT_IMG}.sparse" "$OUT_IMG"
         else
             echo -e "Unknown filesystem: $FILE_SYSTEM, skipping $PARTITION"
             continue
