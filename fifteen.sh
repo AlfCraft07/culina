@@ -26,7 +26,7 @@ export SMART_MANAGER_CN="$(pwd)/QuantumROM/Mods/SMART_MANAGER_CN"
 export BUILD_PARTITIONS="product,system_ext,system"
 
 # Source
-source "$(pwd)/scripts/QuantumRom.sh"
+source "$(pwd)/scripts/QuantumRom-serial.sh"
 
 EXTRACT_FIRMWARE "$FIRM_DIR/$TARGET_DEVICE"
 EXTRACT_FIRMWARE_IMG "$FIRM_DIR/$TARGET_DEVICE"
