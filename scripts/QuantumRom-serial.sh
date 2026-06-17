@@ -311,7 +311,7 @@ EXTRACT_FIRMWARE_IMG() {
             f2fs)
                 echo "- $partition.img Detected $fstype. Size: $IMG_SIZE bytes. Extracting..."
                 sudo rm -rf "$FIRM_DIR/$partition"
-                bash "$QT_DIR/scripts/extract_img.sh" "$imgfile" "$FIRM_DIR"
+                bash "$(pwd)/scripts/extract_img.sh" "$imgfile" "$FIRM_DIR"
                 ;;
             *)
                 echo -e "- $partition.img unsupported filesystem type ($fstype), exiting"
