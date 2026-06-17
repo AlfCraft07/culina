@@ -241,7 +241,7 @@ PREPARE_PARTITIONS() {
         KEEP[$i]=$(echo -e "${KEEP[$i]}" | xargs)
     done
 
-    echo -e "${YELLOW}Preparing partitinos.${NC} $STOCK_DEVICE"
+    echo -e "${YELLOW}Preparing partitions.${NC} $STOCK_DEVICE"
 
     find "$EXTRACTED_FIRM_DIR" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 
@@ -302,61 +302,20 @@ EXTRACT_FIRMWARE_IMG() {
                 sudo rm -rf "$FIRM_DIR/$partition"
                 sudo python3 "$(pwd)/bin/py_scripts/imgextractor.py" "$imgfile" "$FIRM_DIR"
                 ;;
-
             erofs)
                 IMG_SIZE=$(stat -c%s -- "$imgfile")
 				echo -e "- $partition.img Detected erofs. Size: $IMG_SIZE bytes. Extracting..."
                 sudo rm -rf "$FIRM_DIR/$partition"
                 sudo "$(pwd)/bin/erofs-utils/extract.erofs" -i "$imgfile" -x -f -o "$FIRM_DIR" >/dev/null 2>&1
                 ;;
-
             f2fs)
-                IMG_SIZE=$(stat -c%s -- "$imgfile")
-                echo -e "- $partition.img Detected f2fs. Converting → ext4..."
-                # --- Start inline f2fs → ext4 conversion ---
-                IMG_NAME="$imgfile"
-                IMG_DIR=$(dirname "$IMG_NAME")
-                IMG_FILE=$(basename "$IMG_NAME")
-                IMG_NAME_BASE="${IMG_FILE%.img}"
-                NEW_IMG_NAME="${IMG_DIR}/${IMG_FILE}.new"
-                SRC_MOUNT="${IMG_DIR}/${IMG_NAME_BASE}_mount"
-                DST_MOUNT="${IMG_DIR}/${IMG_NAME_BASE}"
-                # Clean previous mounts
-                sudo umount "$DST_MOUNT" 2>/dev/null
-                sudo rm -rf "$DST_MOUNT"
-                sudo umount "$SRC_MOUNT" 2>/dev/null
-                sudo rm -rf "$SRC_MOUNT"
-                # Mount source image
-                sudo mkdir -p "$SRC_MOUNT"
-                sudo mount -o loop,ro "$IMG_NAME" "$SRC_MOUNT"
-                # Calculate size (+10%)
-                MOUNT_SIZE=$(du -sb "$SRC_MOUNT" | awk '{print int($1 * 1.1)}')
-                echo "[*] Source image size (+10% buffer): $MOUNT_SIZE bytes"
-                # Create new ext4 image
-                dd if=/dev/zero of="$NEW_IMG_NAME" bs=1 count=0 seek="$MOUNT_SIZE"
-                mkfs.ext4 -F -b 4096 "$NEW_IMG_NAME"
-                # Mount new ext4 image
-                sudo mkdir -p "$DST_MOUNT"
-                sudo mount -o loop "$NEW_IMG_NAME" "$DST_MOUNT"
-                # Copy data
-                sudo cp -a --preserve "$SRC_MOUNT"/. "$DST_MOUNT"/
-                # Cleanup mounts
-                sudo umount "$DST_MOUNT"
-                sudo rm -rf "$DST_MOUNT"
-                sudo umount "$SRC_MOUNT"
-                sudo rm -rf "$SRC_MOUNT"
-                # Replace original image
-                sudo rm -f "$IMG_NAME"
-                sudo mv "$NEW_IMG_NAME" "$IMG_NAME"
-                echo "- $partition.img Converted to ext4."
-                # --- End inline f2fs → ext4 conversion ---
-                # Extract as ext4
-                sudo rm -rf "$FIRM_DIR/$partition"
-                sudo python3 "$(pwd)/bin/py_scripts/imgextractor.py" "$imgfile" "$FIRM_DIR"
+                echo "- $partition.img Detected f2fs. Size: $IMG_SIZE bytes. Extracting..."
+                echo -e "${YELLOW}$partition.img Detected f2fs.${NC} Size: $ORG_IMG_SIZE bytes. Extracting..."
+                bash "$QT_DIR/scripts/extract_img.sh" "$imgfile" "$FIRM_DIR"
                 ;;
             *)
                 echo -e "- $partition.img unsupported filesystem type ($fstype), exiting"
-                exit 1
+                continue
                 ;;
         esac
     done
