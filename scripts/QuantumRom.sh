@@ -116,7 +116,7 @@ DOWNLOAD_FIRMWARE() {
         echo -e "✅ Downloading provided version: $VERSION"
     fi
 
-    VERSION=$(python3 -m samloader -m "$MODEL" -r "$CSC" -i "$IMEI" checkupdate 2>&1)
+    VERSION=$(python3 -m samloader -m "$MODEL" -r "$CSC" -s "$IMEI" checkupdate 2>&1)
 
     if [ $? -ne 0 ] || [ -z "$VERSION" ]; then
         echo -e "⛔️ MODEL/CSC/IMEI not valid or no update found."
@@ -129,7 +129,7 @@ DOWNLOAD_FIRMWARE() {
     fi
 
     # --- Step 2: Download Firmware ---
-    python3 -m samloader -m "$MODEL" -r "$CSC" -i "$IMEI" download -v "$VERSION" -O "$DOWN_DIR"
+    python3 -m samloader -m "$MODEL" -r "$CSC" -s "$IMEI" download -v "$VERSION" -O "$DOWN_DIR"
     if [ $? -ne 0 ]; then
         echo -e "⛔️ Download failed. Check IMEI/MODEL/CSC."
         exit 1
@@ -241,7 +241,7 @@ PREPARE_PARTITIONS() {
         KEEP[$i]=$(echo -e "${KEEP[$i]}" | xargs)
     done
 
-    echo -e "${YELLOW}Preparing partitinos.${NC} $STOCK_DEVICE"
+    echo -e "${YELLOW}Preparing partitions.${NC} $STOCK_DEVICE"
 
     find "$EXTRACTED_FIRM_DIR" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 
@@ -268,6 +268,7 @@ PREPARE_PARTITIONS() {
 
 EXTRACT_FIRMWARE_IMG() {
     echo -e ""
+
 	if [ "$#" -ne 1 ]; then
         echo -e "Usage: ${FUNCNAME[0]} <FIRMWARE_DIRECTORY>"
         return 1
@@ -276,7 +277,9 @@ EXTRACT_FIRMWARE_IMG() {
 	local FIRM_DIR="$1"
 
     PREPARE_PARTITIONS "$FIRM_DIR"
-	echo -e "${YELLOW}Extracting imges from:${NC} $FIRM_DIR"
+
+	echo -e "${YELLOW}Extracting images from:${NC} $FIRM_DIR"
+
     for imgfile in "$FIRM_DIR"/*.img; do
         [ -e "$imgfile" ] || continue
 
@@ -290,28 +293,29 @@ EXTRACT_FIRMWARE_IMG() {
 
         partition="$(basename "${imgfile%.img}")"
         fstype=$(blkid -o value -s TYPE "$imgfile")
+        [ -z "$fstype" ] && fstype=$(file -b "$imgfile")
 
         case "$fstype" in
             ext4)
                 IMG_SIZE=$(stat -c%s -- "$imgfile")
 				echo -e "- $partition.img Detected $fstype. Size: $IMG_SIZE bytes. Extracting..."
-				sudo rm -rf "$FIRM_DIR/$partition"
-                sudo python3 $(pwd)/bin/py_scripts/imgextractor.py "$imgfile" "$FIRM_DIR"
+                sudo rm -rf "$FIRM_DIR/$partition"
+                sudo python3 "$(pwd)/bin/py_scripts/imgextractor.py" "$imgfile" "$FIRM_DIR"
                 ;;
             erofs)
                 IMG_SIZE=$(stat -c%s -- "$imgfile")
 				echo -e "- $partition.img Detected $fstype. Size: $IMG_SIZE bytes. Extracting..."
-				sudo rm -rf "$FIRM_DIR/$partition"
-                sudo $(pwd)/bin/erofs-utils/extract.erofs -i "$imgfile" -x -f -o "$FIRM_DIR" >/dev/null 2>&1
+                sudo rm -rf "$FIRM_DIR/$partition"
+                sudo "$(pwd)/bin/erofs-utils/extract.erofs" -i "$imgfile" -x -f -o "$FIRM_DIR" >/dev/null 2>&1
                 ;;
             f2fs)
                 echo "- $partition.img Detected $fstype. Size: $IMG_SIZE bytes. Extracting..."
-                echo -e "${YELLOW}$partition.img Detected f2fs.${NC} Size: $ORG_IMG_SIZE bytes. Extracting..."
-                sudo bash $(pwd)/scripts/extract_img.sh" "$imgfile" "$FIRM_DIR"
+                sudo rm -rf "$FIRM_DIR/$partition"
+                bash "$(pwd)/scripts/extract_img.sh" "$imgfile" "$FIRM_DIR"
                 ;;
             *)
-                echo -e "- $imgfile unsupported filesystem type ($fstype), exiting"
-                exit 1
+                echo -e "- $partition.img unsupported filesystem type ($fstype), exiting"
+                continue
                 ;;
         esac
     done
@@ -320,7 +324,7 @@ EXTRACT_FIRMWARE_IMG() {
 
 	if ! ls "$FIRM_DIR"/system* >/dev/null 2>&1; then
         echo -e "Maybe your firmware is not downloaded, is corrupt, or contains an unsupported image."
-        exit 1
+        continue
     fi
 
     sudo chown -R "$REAL_USER:$REAL_USER" "$FIRM_DIR"
@@ -1684,7 +1688,7 @@ BUILD_IMG() {
             SIZE=$(((EXTRACTED_SIZE + 511) / 512 * 512))
             EXTENDED_SIZE=$((SIZE + SIZE / 4))
             dd if=/dev/zero of=$OUT_IMG bs=512 count=$((EXTENDED_SIZE / 512))
-            mkfs_f2fs \
+            make_f2fs \
             -f -q \
             -g android \
             -O extra_attr,inode_checksum,sb_checksum,compression \
