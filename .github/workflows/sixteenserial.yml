@@ -1,4 +1,4 @@
-name: QuantumROM Tools Sixteen (Serial)
+name: QuantumROM Tools Sixteen (IMEI)
 
 on:
   workflow_dispatch:
@@ -8,25 +8,25 @@ on:
         required: true
         default: "SM-P613"
       USE_UI_8_TETHERING_APEX:
-        description: "Set True if your kernel BPF version is 5.4 (lower than 5.10)."
+        description: "Set True if your kernel BPF version is 5.4 (lower than 5.10)"
         required: true
         default: "False"
       TARGET_DEVICE:
-        description: "TARGET_DEVICE_MODEL."
+        description: "TARGET_DEVICE_MODEL"
         required: true
-        default: "SM-X210"
+        default: "SM-X210R"
       TARGET_DEVICE_CSC:
         description: "TARGET_DEVICE_CSC."
         required: true
         default: "EUX"
       TARGET_DEVICE_IMEI:
-        description: "TARGET_DEVICE_IMEI."
+        description: "TARGET_DEVICE_IMEI"
         required: true
-        default: "R9TY4053SDE"
+        default: "R9TY7096JRK"
       OUTPUT_FILESYSTEM:
         description: "OUTPUT_FILESYSTEM. e.g erofs / ext4 / f2fs"
         required: true
-        default: "erofs"
+        default: "ext4"
       COMPRESS_IMG_TO_XZ:
         description: "Compress IMG to XZ (True/False)"
         required: true
@@ -55,19 +55,20 @@ jobs:
 
       - name: Install Dependencies.
         run: |
-          sudo apt install -y p7zip-full lz4 liblz4-1 liblz4-dev libzstd1 libzstd-dev build-essential android-sdk-libsparse-utils f2fs-tools fuse2fs fuse e2fsprogs python3 python3-pip zipalign unzip openjdk-17-jdk jq perl xxd kmod erofs-utils linux-modules-extra-$(uname -r)
+          sudo apt update
+          sudo apt install -y p7zip-full lz4 liblz4-1 liblz4-dev libzstd1 libzstd-dev build-essential android-sdk-libsparse-utils f2fs-tools fuse2fs fuse e2fsprogs python3 python3-pip zipalign unzip openjdk-21-jdk jq perl xxd kmod erofs-utils linux-modules-extra-$(uname -r)
           sudo modprobe f2fs
           sudo pip3 install git+https://github.com/SN-Abdullah-Al-Noman/samloader.git --break-system-packages
           mkdir -p FW WORK OUT
 
       - name: Download firmware ▶️ ${{ github.event.inputs.TARGET_DEVICE }} - ${{ github.event.inputs.TARGET_DEVICE_CSC }}
         run: |
-          source scripts/QuantumRom-serial.sh
+          source scripts/QuantumRom.sh
           DOWNLOAD_FIRMWARE "${{ github.event.inputs.TARGET_DEVICE }}" "${{ github.event.inputs.TARGET_DEVICE_CSC }}" "${{ github.event.inputs.TARGET_DEVICE_IMEI }}" "FW" "${{ github.event.inputs.TARGET_FW_VERSION }}"
 
       - name: Extract firmware
         run: |
-          source scripts/QuantumRom-serial.sh
+          source scripts/QuantumRom.sh
           EXTRACT_FIRMWARE "FW/${{ github.event.inputs.TARGET_DEVICE }}"
 
       - name: Start Rom Build For ${{ github.event.inputs.STOCK_DEVICE }}

@@ -84,7 +84,7 @@ GET_PROP() {
     esac
 
     if [ ! -f "$FILE" ]; then
-        echo -e "- ${RED}File not found: $FILE"
+        echo -e "- File not found: $FILE"
         return 1
     fi
 
@@ -211,6 +211,11 @@ EXTRACT_FIRMWARE() {
 
     echo -e "Extracting downloaded firmware."
 
+	if [ ! -d "$FIRM_DIR" ]; then
+        echo -e "- Directory not found: $FIRM_DIR"
+        exit
+    fi
+
     # ---- ZIP ----
     for file in "$FIRM_DIR"/*.zip; do
         [ -e "$file" ] || continue
@@ -333,13 +338,14 @@ EXTRACT_SUPER_IMG() {
             mv -f "$FIRM_DIR/super_raw.img" "$FIRM_DIR/super.img"
         fi
 
+        echo "- Extracting partitions from super.img"
         "$lpunpack" "$FIRM_DIR/super.img" "$FIRM_DIR" || return 1
         rm -f "$FIRM_DIR/super.img"
 
         echo -e "super.img extraction complete"
 
     else
-        echo -e "${RED}No super.img found."
+        echo -e "No super.img found."
     fi
 }
 
@@ -355,7 +361,7 @@ PREPARE_PARTITIONS() {
     echo -e "Preparing partitions. $STOCK_DEVICE"
 	
 	if [ ! -d "$EXTRACTED_FIRM_DIR" ]; then
-        echo -e "${RED} Directory not found: $EXTRACTED_FIRM_DIR"
+        echo -e "- Directory not found: $EXTRACTED_FIRM_DIR"
         return 1
     fi
 
@@ -446,12 +452,12 @@ EXTRACT_FIRMWARE_IMG() {
             local tmp_raw="${imgfile}.raw"
 
             if ! simg2img "$imgfile" "$tmp_raw" >/dev/null 2>&1; then
-                echo -e "${RED}Failed to convert sparse image: $img_name"
+                echo -e "Failed to convert sparse image: $img_name"
                 return
             fi
 
             if [ ! -f "$tmp_raw" ]; then
-                echo -e "${RED}- Sparse conversion output missing: $tmp_raw"
+                echo -e "- Sparse conversion output missing: $tmp_raw"
                 return
             fi
 
@@ -481,7 +487,7 @@ EXTRACT_FIRMWARE_IMG() {
                 ;;
 
             *)
-                echo -e "${RED}- $img_name unsupported filesystem type: ($fstype), skipping"
+                echo -e "- $img_name unsupported filesystem type: ($fstype), skipping"
                 ;;
         esac
     }
@@ -493,13 +499,15 @@ EXTRACT_FIRMWARE_IMG() {
             extract_img "$imgfile"
         done
 
-	    rm -rf "$EXTRACTED_FIRM_DIR"/*.img
+	    if [ "${GITHUB_ACTIONS}" = "true" ]; then
+            rm -f "$EXTRACTED_FIRM_DIR"/*.img
+        fi
 
     else
         local TARGET_IMG="${EXTRACTED_FIRM_DIR}/$MODE"
 
         if [ ! -f "$TARGET_IMG" ]; then
-            echo -e "${RED}- Image not found: $TARGET_IMG"
+            echo -e "- Image not found: $TARGET_IMG"
             return 1
         fi
 
@@ -573,7 +581,7 @@ INSTALL_FRAMEWORK() {
     local framework_apk="$2"
 
 	if [ ! -f "$framework_apk" ]; then
-        echo -e "- ${RED}File not found: $framework_apk"
+        echo -e "- File not found: $framework_apk"
         return 1
     fi
 
@@ -608,7 +616,7 @@ DECOMPILE() {
     echo -e "Decompiling: $FILE"
 
 	if [ ! -f "$FILE" ]; then
-        echo -e "-${RED} File not found: $FILE"
+        echo -e "- File not found: $FILE"
         return 1
     fi
 
@@ -643,7 +651,7 @@ RECOMPILE() {
     echo -e "Recompiling: $DECOMPILED_DIR"
 
 	if [ ! -d "$DECOMPILED_DIR" ]; then
-        echo -e "-${RED} Directory not found: $DECOMPILED_DIR"
+        echo -e "- Directory not found: $DECOMPILED_DIR"
         return 1
     fi
 
@@ -958,7 +966,7 @@ PATCH_SSRM() {
     echo -e "- Patching: $FILE"
 
     if [ ! -f "$FILE" ]; then
-        echo -e "- ${RED}File not found! Skipping..."
+        echo -e "- File not found! Skipping..."
         return 1
     fi
 
@@ -997,7 +1005,7 @@ PATCH_BT_LIB() {
     echo -e "Patching Bluetooth library."
     # Get libbluetooth_jni.so
     if ! ls "$EXTRACTED_FIRM_DIR"/system/system/apex/com.android.bt*.apex >/dev/null 2>&1; then
-        echo -e "- ${RED} No bluetooth apex file found."
+        echo -e "- No bluetooth apex file found."
         return 1
     fi
 
@@ -1100,7 +1108,7 @@ FIX_VNDK() {
         echo -e "- VNDK matched. ${TARGET_ROM_SYSTEM_EXT_DIR}/apex/com.android.vndk.v${STOCK_VNDK_VERSION}.apex"
     else
         echo -e "- VNDK mismatch. Adding SDK $SDK com.android.vndk.v${STOCK_VNDK_VERSION}.apex"
-        rm -rf "${TARGET_ROM_SYSTEM_EXT_DIR}/apex"
+        rm -rf "${TARGET_ROM_SYSTEM_EXT_DIR}/apex/"com.android.vndk.v*.apex
         7z x "$VNDKS_COLLECTION/$SDK/${STOCK_VNDK_VERSION}.zip" -o"${TARGET_ROM_SYSTEM_EXT_DIR}/" -y >/dev/null 2>&1
     fi
 }
@@ -1283,7 +1291,7 @@ PATCH_SELINUX() {
 
     echo -e "Patching selinux."
 
-	UNSUPPORTED_SELINUX=("audiomirroring" "fabriccrypto" "hal_dsms_default" "qb_id_prop" "hal_dsms_service" "proc_compaction_proactiveness" "sbauth" "ker_app" "kpp_app" "kpp_data" "attiqi_app" "kpoc_charger" "sec_diag" "mosey_app")
+	UNSUPPORTED_SELINUX=("audiomirroring" "fabriccrypto" "hal_dsms_default" "qb_id_prop" "hal_dsms_service" "proc_compaction_proactiveness" "sbauth" "ker_app" "kpp_app" "kpp_data" "attiqi_app" "kpoc_charger" "sec_diag" "mosey_app" "vendor_smcinvoke_device")
 
     if [ -d "${EXTRACTED_FIRM_DIR}/system" ]; then
 	    echo "- Patching selinux for system"
@@ -1297,7 +1305,7 @@ PATCH_SELINUX() {
     fi
 
     if [ -d "$TARGET_ROM_SYSTEM_EXT_DIR" ]; then
-        echo -e "${RED} - Patching selinux for system_ext."
+        echo -e "- Patching selinux for system_ext"
 
         find "${TARGET_ROM_SYSTEM_EXT_DIR}/etc/selinux/mapping/" -type f -name "*.0.cil" | while read -r SELINUX_FILE; do
             # echo "  - Processing: $SELINUX_FILE"
@@ -1682,7 +1690,7 @@ FIX_CAMERA() {
     if [ "$STOCK_DEVICE_CHIPSET" = "MediaTek" ] && [ "$BUILD_BRAND" != "MTK" ]; then
         echo "- Adding mediatek camera related files."
 
-        if [ ! -s "$(pwd)/QuantumROM/Mods/Apps/MTK_Camera_Files_Android_${ANDROID_VERSION}.zip" ]; then
+        if [ -f "$(pwd)/QuantumROM/Mods/Apps/MTK_Camera_Files_Android_${ANDROID_VERSION}.zip" ]; then
             if curl -fsSL --connect-timeout 5 https://www.google.com >/dev/null; then
                 wget --no-check-certificate \
                     "https://github.com/SN-Abdullah-Al-Noman/Samsung_Special/releases/download/Android_${ANDROID_VERSION}/MTK_Camera_Files_Android_${ANDROID_VERSION}.zip" \
@@ -1844,7 +1852,7 @@ BUILD_PROP() {
     esac
 
     if [ ! -f "$FILE" ]; then
-        echo -e "- ${RED}File not found: $FILE"
+        echo -e "- File not found: $FILE"
         return 1
     fi
 
@@ -1960,7 +1968,7 @@ ADD_SAMSUNG_FLAGSHIP_APPS() {
     echo "- Adding China smart manager."
 	
 	if [ ! -d "${EXTRACTED_FIRM_DIR}/system/system/priv-app/SmartManagerCN" ] && \
-        [ ! -s "$(pwd)/QuantumROM/Mods/Apps/Samsung_SmartManagerCN_Android_${ANDROID_VERSION}.zip" ]; then
+        [ -f "$(pwd)/QuantumROM/Mods/Apps/Samsung_SmartManagerCN_Android_${ANDROID_VERSION}.zip" ]; then
 
         if curl -fsSL --connect-timeout 5 https://www.google.com >/dev/null; then
             wget --no-check-certificate \
@@ -1973,7 +1981,7 @@ ADD_SAMSUNG_FLAGSHIP_APPS() {
     fi
 
     if [ ! -d "${EXTRACTED_FIRM_DIR}/system/system/priv-app/SmartManagerCN" ] && \
-        [ ! -s "$(pwd)/QuantumROM/Mods/Apps/Samsung_SmartManagerCN_Android_${ANDROID_VERSION}.zip" ]; then
+        [ -f "$(pwd)/QuantumROM/Mods/Apps/Samsung_SmartManagerCN_Android_${ANDROID_VERSION}.zip" ]; then
 
         rm -rf "$(pwd)/QuantumROM/Mods/Apps/Samsung_SmartManagerCN_Android_${ANDROID_VERSION}"
         unzip -o "$(pwd)/QuantumROM/Mods/Apps/Samsung_SmartManagerCN_Android_${ANDROID_VERSION}.zip" \
@@ -1995,7 +2003,7 @@ ADD_SAMSUNG_FLAGSHIP_APPS() {
     echo "- Adding Photo editor ai full."
 	
 	if [ ! -d "${EXTRACTED_FIRM_DIR}/system/system/priv-app/PhotoEditor_AIFull" ] && \
-        [ ! -s "$(pwd)/QuantumROM/Mods/Apps/Samsung_PhotoEditor_AIFull_Android_${ANDROID_VERSION}.zip" ]; then
+        [ -f "$(pwd)/QuantumROM/Mods/Apps/Samsung_PhotoEditor_AIFull_Android_${ANDROID_VERSION}.zip" ]; then
 
         if curl -fsSL --connect-timeout 5 https://www.google.com >/dev/null; then
             wget --no-check-certificate \
@@ -2008,7 +2016,7 @@ ADD_SAMSUNG_FLAGSHIP_APPS() {
     fi
 
     if [ ! -d "${EXTRACTED_FIRM_DIR}/system/system/priv-app/PhotoEditor_AIFull" ] && \
-        [ ! -s "$(pwd)/QuantumROM/Mods/Apps/Samsung_PhotoEditor_AIFull_Android_${ANDROID_VERSION}.zip" ]; then
+        [ -f "$(pwd)/QuantumROM/Mods/Apps/Samsung_PhotoEditor_AIFull_Android_${ANDROID_VERSION}.zip" ]; then
 
         rm -rf "$(pwd)/QuantumROM/Mods/Apps/Samsung_PhotoEditor_AIFull_Android_${ANDROID_VERSION}"
 
@@ -2037,7 +2045,7 @@ ADD_SAMSUNG_FLAGSHIP_APPS() {
     echo "- Adding Samsung OCR Data Provider."
 
     if [ ! -d "${EXTRACTED_FIRM_DIR}/system/system/app/OCRDataProvider" ] && \
-        [ ! -s "$(pwd)/QuantumROM/Mods/Apps/Samsung_OCRDataProvider_Android_${ANDROID_VERSION}.zip" ]; then
+        [ -f "$(pwd)/QuantumROM/Mods/Apps/Samsung_OCRDataProvider_Android_${ANDROID_VERSION}.zip" ]; then
 
 		if curl -fsSL --connect-timeout 5 https://www.google.com >/dev/null; then
             wget --no-check-certificate \
@@ -2050,7 +2058,7 @@ ADD_SAMSUNG_FLAGSHIP_APPS() {
     fi
 
     if [ ! -d "${EXTRACTED_FIRM_DIR}/system/system/app/OCRDataProvider" ] && \
-        [ ! -s "$(pwd)/QuantumROM/Mods/Apps/Samsung_OCRDataProvider_Android_${ANDROID_VERSION}.zip" ]; then
+        [ -f "$(pwd)/QuantumROM/Mods/Apps/Samsung_OCRDataProvider_Android_${ANDROID_VERSION}.zip" ]; then
 
         rm -rf "$(pwd)/QuantumROM/Mods/Apps/Samsung_OCRDataProvider_Android_${ANDROID_VERSION}"
         unzip -o "$(pwd)/QuantumROM/Mods/Apps/Samsung_OCRDataProvider_Android_${ANDROID_VERSION}.zip" \
@@ -2066,7 +2074,7 @@ ADD_SAMSUNG_FLAGSHIP_APPS() {
     # ================= IMPORTANT APPS =================
 	echo "- Adding Samsung Important Apps."
 
-    if [ ! -s "$(pwd)/QuantumROM/Mods/Apps/Samsung_Important_Apps_Android_${ANDROID_VERSION}.zip" ]; then
+    if [ ! -f "$(pwd)/QuantumROM/Mods/Apps/Samsung_Important_Apps_Android_${ANDROID_VERSION}.zip" ]; then
         if curl -fsSL --connect-timeout 5 https://www.google.com >/dev/null; then
             wget --no-check-certificate \
                 "https://github.com/SN-Abdullah-Al-Noman/Samsung_Special/releases/download/Android_${ANDROID_VERSION}/Samsung_Important_Apps_Android_${ANDROID_VERSION}.zip" \
@@ -2457,7 +2465,7 @@ BUILD_IMG() {
             mv "${OUT_IMG}.sparse" "$OUT_IMG"
 
         else
-            echo -e "${RED}Unsupported filesystem: $FILE_SYSTEM"
+            echo -e "Unsupported filesystem: $FILE_SYSTEM"
             return
         fi
     }

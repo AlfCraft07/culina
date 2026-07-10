@@ -10,19 +10,19 @@ on:
       USE_UI_8_TETHERING_APEX:
         description: "Set True if your kernel BPF version is 5.4 (lower than 5.10)"
         required: true
-        default: "True"
+        default: "False"
       TARGET_DEVICE:
         description: "TARGET_DEVICE_MODEL"
         required: true
-        default: "SM-A155F"
+        default: "SM-A065F"
       TARGET_DEVICE_CSC:
         description: "TARGET_DEVICE_CSC."
         required: true
-        default: "EUX"
+        default: "XXV"
       TARGET_DEVICE_IMEI:
         description: "TARGET_DEVICE_IMEI"
         required: true
-        default: "35843873"
+        default: "35602621"
       OUTPUT_FILESYSTEM:
         description: "OUTPUT_FILESYSTEM. e.g erofs / ext4 / f2fs"
         required: true
