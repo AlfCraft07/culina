@@ -807,70 +807,70 @@ PATCH_FLAG_SECURE() {
 }
 
 
-PATCH_SECURE_FOLDER() {
-    echo " "
+# PATCH_SECURE_FOLDER() {
+#     echo " "
 
-	if [ "$#" -ne 1 ]; then
-        echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
-        return 1
-    fi
+# 	if [ "$#" -ne 1 ]; then
+#         echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
+#         return 1
+#     fi
 
-    echo -e "Patching secure folder."
+#     echo -e "Patching secure folder."
 
-	#https://forum.xda-developers.com/t/mods-samsung-not-android-mods-collection-exynos.3772017/post-86770885
-	local FILE_1="${1}/smali/com/android/server/knox/dar/DarManagerService.smali"
-	local METHOD_NAME_1=".method public final checkDeviceIntegrity([Ljava/security/cert/Certificate;)Z"
-	local METHOD_NAME_2=".method public final isDeviceRootKeyInstalled()Z"
-    local METHOD_NAME_3=".method public final isKnoxKeyInstallable()Z"
+# 	#https://forum.xda-developers.com/t/mods-samsung-not-android-mods-collection-exynos.3772017/post-86770885
+# 	local FILE_1="${1}/smali/com/android/server/knox/dar/DarManagerService.smali"
+# 	local METHOD_NAME_1=".method public final checkDeviceIntegrity([Ljava/security/cert/Certificate;)Z"
+# 	local METHOD_NAME_2=".method public final isDeviceRootKeyInstalled()Z"
+#     local METHOD_NAME_3=".method public final isKnoxKeyInstallable()Z"
     
-    local REPLACE_BODY_1='
-    .locals 0
+#     local REPLACE_BODY_1='
+#     .locals 0
  
-    const/4 p0, 0x1
+#     const/4 p0, 0x1
  
-    return p0
-    '
+#     return p0
+#     '
 
-    REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_1" "$REPLACE_BODY_1"
-    REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_2" "$REPLACE_BODY_1"
-	REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_3" "$REPLACE_BODY_1"
+#     REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_1" "$REPLACE_BODY_1"
+#     REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_2" "$REPLACE_BODY_1"
+# 	REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_3" "$REPLACE_BODY_1"
 
-    local FILE_2="${1}/smali/com/android/server/StorageManagerService.smali"
-    local METHOD_NAME_4=".method public static isRootedDevice()Z"
-    local REPLACE_BODY_2='
-    .locals 1
+#     local FILE_2="${1}/smali/com/android/server/StorageManagerService.smali"
+#     local METHOD_NAME_4=".method public static isRootedDevice()Z"
+#     local REPLACE_BODY_2='
+#     .locals 1
  
-    const/4 v0, 0x0
+#     const/4 v0, 0x0
  
-    return v0
-    '
-    REPLACE_SMALI_METHOD "$FILE_2" "$METHOD_NAME_4" "$REPLACE_BODY_2"
-}
+#     return v0
+#     '
+#     REPLACE_SMALI_METHOD "$FILE_2" "$METHOD_NAME_4" "$REPLACE_BODY_2"
+# }
 
 
-PATCH_PRIVATE_SHARE() {
-    echo " "
+# PATCH_PRIVATE_SHARE() {
+#     echo " "
 
-	if [ "$#" -ne 1 ]; then
-        echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
-        return 1
-    fi
+# 	if [ "$#" -ne 1 ]; then
+#         echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
+#         return 1
+#     fi
 
-    echo -e "Patching private share."
-	# https://forum.xda-developers.com/t/mods-samsung-not-android-mods-collection-exynos.3772017/post-86805769
+#     echo -e "Patching private share."
+# 	# https://forum.xda-developers.com/t/mods-samsung-not-android-mods-collection-exynos.3772017/post-86805769
 	
-    local FILE="${1}/smali/com/samsung/android/security/keystore/AttestParameterSpec.smali"
-    # patch .method public isVerifiableIntegrity()Z
-    local METHOD_NAME=".method public isVerifiableIntegrity()Z"
-    local REPLACE_BODY='
-    .locals 1
+#     local FILE="${1}/smali/com/samsung/android/security/keystore/AttestParameterSpec.smali"
+#     # patch .method public isVerifiableIntegrity()Z
+#     local METHOD_NAME=".method public isVerifiableIntegrity()Z"
+#     local REPLACE_BODY='
+#     .locals 1
  
-    const/4 v0, 0x1
+#     const/4 v0, 0x1
  
-    return v0
-    '
-	REPLACE_SMALI_METHOD "$FILE" "$METHOD_NAME" "$REPLACE_BODY"
-}
+#     return v0
+#     '
+# 	REPLACE_SMALI_METHOD "$FILE" "$METHOD_NAME" "$REPLACE_BODY"
+# }
 
 
 DISABLE_SIGNATURE_VERIFICATION() {
