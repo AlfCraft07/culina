@@ -26,7 +26,7 @@ export BUILD_PARTITIONS="product,system_ext,system"
 
 # Source
 source "$(pwd)/scripts/debloat.sh"
-source "$(pwd)/scripts/QuantumRom.sh"
+source "$(pwd)/scripts/QuantumRom-serial.sh"
 
 #EXTRACT_FIRMWARE "$FIRM_DIR/$TARGET_DEVICE"
 EXTRACT_SUPER_IMG "$FIRM_DIR/$TARGET_DEVICE"
