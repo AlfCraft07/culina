@@ -590,82 +590,82 @@ INSTALL_FRAMEWORK() {
 }
 
 
-DECOMPILE() {
-    echo " "
+# DECOMPILE() {
+#     echo " "
 
-    if [ "$#" -ne 4 ]; then
-        echo -e "Usage: DECOMPILE <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <FILE> <DECOMPILE_DIR>"
-        return 1
-    fi
+#     if [ "$#" -ne 4 ]; then
+#         echo -e "Usage: DECOMPILE <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <FILE> <DECOMPILE_DIR>"
+#         return 1
+#     fi
 
-    # apktool version-3
-	# d = decompile
-	# --force = force delete target decompile directory before decompile
-	# --no-src = don't decompile dex file
-	# --no-res = don't decode resources
-	# --match-original = decompile everything as original
-	# --frame-path = framework path
-	# -o = decompile directory
-	local APKTOOL="$1"
-	local FRAMEWORK_DIR="$2"
-    local FILE="$3"
-    local DECOMPILE_DIR="$4"
-    local BASENAME="$(basename "${FILE%.*}")"
-    local OUT="$DECOMPILE_DIR/$BASENAME"
+#     # apktool version-3
+# 	# d = decompile
+# 	# --force = force delete target decompile directory before decompile
+# 	# --no-src = don't decompile dex file
+# 	# --no-res = don't decode resources
+# 	# --match-original = decompile everything as original
+# 	# --frame-path = framework path
+# 	# -o = decompile directory
+# 	local APKTOOL="$1"
+# 	local FRAMEWORK_DIR="$2"
+#     local FILE="$3"
+#     local DECOMPILE_DIR="$4"
+#     local BASENAME="$(basename "${FILE%.*}")"
+#     local OUT="$DECOMPILE_DIR/$BASENAME"
 
-    echo -e "Decompiling: $FILE"
+#     echo -e "Decompiling: $FILE"
 
-	if [ ! -f "$FILE" ]; then
-        echo -e "- File not found: $FILE"
-        return 1
-    fi
+# 	if [ ! -f "$FILE" ]; then
+#         echo -e "- File not found: $FILE"
+#         return 1
+#     fi
 
-	rm -rf "$OUT"
-    java -jar "$APKTOOL" d --force --frame-path "$FRAMEWORK_DIR" --match-original "$FILE" -o "$OUT"
-}
+# 	rm -rf "$OUT"
+#     java -jar "$APKTOOL" d --force --frame-path "$FRAMEWORK_DIR" --match-original "$FILE" -o "$OUT"
+# }
 
 
-RECOMPILE() {
-    echo " "
+# RECOMPILE() {
+#     echo " "
 
-	if [ "$#" -ne 4 ]; then
-        echo -e "Usage: ${FUNCNAME[0]} <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <DECOMPILED_DIR> <RECOMPILE_DIR>"
-        return 1
-    fi
+# 	if [ "$#" -ne 4 ]; then
+#         echo -e "Usage: ${FUNCNAME[0]} <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <DECOMPILED_DIR> <RECOMPILE_DIR>"
+#         return 1
+#     fi
 
-    # apktool version-3
-	# b = recompile
-	# --copy-original = use original manifest
-	# --frame-path = framework path
-	# -o = output /recompile file directory with filename
-	local APKTOOL="$1"
-	local FRAMEWORK_DIR="$2"
-	local DECOMPILED_DIR="$3"
-    local RECOMPILE_DIR="$4"
+#     # apktool version-3
+# 	# b = recompile
+# 	# --copy-original = use original manifest
+# 	# --frame-path = framework path
+# 	# -o = output /recompile file directory with filename
+# 	local APKTOOL="$1"
+# 	local FRAMEWORK_DIR="$2"
+# 	local DECOMPILED_DIR="$3"
+#     local RECOMPILE_DIR="$4"
 
-    local org_file_name=$(awk '/^apkFileName:/ {print $2}' "$DECOMPILED_DIR/apktool.yml")
-    local name="${org_file_name%.*}"
-    local ext="${org_file_name##*.}"
-    local built_file="$RECOMPILE_DIR/${name}.$ext"
+#     local org_file_name=$(awk '/^apkFileName:/ {print $2}' "$DECOMPILED_DIR/apktool.yml")
+#     local name="${org_file_name%.*}"
+#     local ext="${org_file_name##*.}"
+#     local built_file="$RECOMPILE_DIR/${name}.$ext"
 
-    echo -e "Recompiling: $DECOMPILED_DIR"
+#     echo -e "Recompiling: $DECOMPILED_DIR"
 
-	if [ ! -d "$DECOMPILED_DIR" ]; then
-        echo -e "- Directory not found: $DECOMPILED_DIR"
-        return 1
-    fi
+# 	if [ ! -d "$DECOMPILED_DIR" ]; then
+#         echo -e "- Directory not found: $DECOMPILED_DIR"
+#         return 1
+#     fi
 
-    java -jar "$APKTOOL" b "$DECOMPILED_DIR" --copy-original --frame-path "$FRAMEWORK_DIR" -o "$built_file"
-    rm -rf "$DECOMPILED_DIR"
+#     java -jar "$APKTOOL" b "$DECOMPILED_DIR" --copy-original --frame-path "$FRAMEWORK_DIR" -o "$built_file"
+#     rm -rf "$DECOMPILED_DIR"
 
-	# Zipalign
-	# echo " "
-	# if [[ "$ext" == "apk" ]]; then
-	    # echo -e "Zipaligning: $built_file to $final_file"
-        # zipalign -v 4 "$built_file" "$final_file" >/dev/null 2>&1
-		# rm -rf "$built_file"
-    # fi
-}
+# 	# Zipalign
+# 	# echo " "
+# 	# if [[ "$ext" == "apk" ]]; then
+# 	    # echo -e "Zipaligning: $built_file to $final_file"
+#         # zipalign -v 4 "$built_file" "$final_file" >/dev/null 2>&1
+# 		# rm -rf "$built_file"
+#     # fi
+# }
 
 
 REPLACE_SMALI_METHOD() {
