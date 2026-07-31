@@ -14,19 +14,19 @@ on:
       TARGET_DEVICE:
         description: "TARGET_DEVICE_MODEL"
         required: true
-        default: "SM-X210R"
+        default: "SM-X710"
       TARGET_DEVICE_CSC:
         description: "TARGET_DEVICE_CSC."
         required: true
-        default: "EUX"
+        default: "XAR"
       TARGET_DEVICE_IMEI:
         description: "TARGET_DEVICE_IMEI"
         required: true
-        default: "R9TY7096JRK"
+        default: "R52W80ASXKM"
       OUTPUT_FILESYSTEM:
         description: "OUTPUT_FILESYSTEM. e.g erofs / ext4 / f2fs"
         required: true
-        default: "ext4"
+        default: "erofs"
       COMPRESS_IMG_TO_XZ:
         description: "Compress IMG to XZ (True/False)"
         required: true
