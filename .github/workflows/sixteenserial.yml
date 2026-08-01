@@ -18,11 +18,11 @@ on:
       TARGET_DEVICE_CSC:
         description: "TARGET_DEVICE_CSC."
         required: true
-        default: "XAR"
+        default: "EUX"
       TARGET_DEVICE_IMEI:
         description: "TARGET_DEVICE_IMEI"
         required: true
-        default: "R52W80ASXKM"
+        default: "R52X707GQGX"
       OUTPUT_FILESYSTEM:
         description: "OUTPUT_FILESYSTEM. e.g erofs / ext4 / f2fs"
         required: true
