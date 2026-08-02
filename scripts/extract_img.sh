@@ -26,7 +26,7 @@ umount "$SRC_MOUNT" 2>/dev/null || true
 rm -rf "$SRC_MOUNT"
 
 rm -rf "${EXTRACTED_FIRM_DIR}/$IMG_NAME_BASE"
-mkdir "${FIRM_DIR}/$IMG_NAME_BASE"
+mkdir "${EXTRACTED_FIRM_DIR}/$IMG_NAME_BASE"
 
 # config directory
 mkdir -p "${EXTRACTED_FIRM_DIR}/config"
