@@ -974,11 +974,9 @@ UPDATE_SDHMS() {
 
     local EXTRACTED_FIRM_DIR="$1"
 
-	if [ "$USE_ALT_SDHMS_APP" = "TRUE" ]; then
-        echo "- Adding alternative SDHMS app."
-		rm -rf "${EXTRACTED_FIRM_DIR}/system/priv-app/SamsungDeviceHealthManagerService"
-		cp -a "$(pwd)/QuantumROM/Mods/Apps/SDHMS/." "${EXTRACTED_FIRM_DIR}/system"
-    fi
+    echo "- Adding alternative SDHMS app."
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/priv-app/SamsungDeviceHealthManagerService"
+	cp -a "$(pwd)/QuantumROM/Mods/Apps/SDHMS/." "${EXTRACTED_FIRM_DIR}/"
 }
 
 
@@ -1146,14 +1144,19 @@ FIX_VNDK() {
 	local TARGET_ROM_SYSTEM_EXT_DIR="$(GET_SYSTEM_EXT_DIR "$EXTRACTED_FIRM_DIR")"
 
     echo -e "Checking $STOCK_DEVICE and $TARGET_DEVICE vndk version."
-    local SDK="$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" ro.build.version.sdk_full)"
+    local SDK="$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.build.version.sdk_full")"
+
+    if [[ -z "$SDK" ]]; then
+        local SDK="$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" ro.build.version.sdk)"
+    fi
+
 	echo "- Target rom SDK version: $SDK"
     if [ -f "${TARGET_ROM_SYSTEM_EXT_DIR}/apex/com.android.vndk.v${STOCK_VNDK_VERSION}.apex" ]; then
         echo -e "- VNDK matched. ${TARGET_ROM_SYSTEM_EXT_DIR}/apex/com.android.vndk.v${STOCK_VNDK_VERSION}.apex"
     else
         echo -e "- VNDK mismatch. Adding SDK $SDK com.android.vndk.v${STOCK_VNDK_VERSION}.apex"
         rm -rf "${TARGET_ROM_SYSTEM_EXT_DIR}/apex/"com.android.vndk.v*.apex
-        7z x "$VNDKS_COLLECTION/$SDK/${STOCK_VNDK_VERSION}.zip" -o"${TARGET_ROM_SYSTEM_EXT_DIR}/" -y >/dev/null 2>&1
+        7z x -aoa "$VNDKS_COLLECTION/$SDK/${STOCK_VNDK_VERSION}.zip" -o"${TARGET_ROM_SYSTEM_EXT_DIR}/"
     fi
 }
 
@@ -1498,7 +1501,8 @@ APPLY_STOCK_ROM_FLOATING_FEATURE() {
         return 1
     fi
 
-	local TARGET_ROM_FLOATING_FEATURE="$1"
+    local STOCK_ROM_FLOATING_FEATURE="$1"
+	local TARGET_ROM_FLOATING_FEATURE="$2"
 
     echo "Applying Stock Floating Feature."
 
@@ -1709,8 +1713,12 @@ FIX_BLUETOOTH() {
 
     local EXTRACTED_FIRM_DIR="$1"
     local BUILD_BRAND=$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" "Build.BRAND")
-	local SDK=$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.build.version.sdk_full")
-    local ANDROID_VERSION=$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.system.build.version.release")
+	local ANDROID_VERSION=$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.system.build.version.release")
+	local SDK="$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.build.version.sdk_full")"
+
+    if [[ -z "$SDK" ]]; then
+        local SDK="$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" ro.build.version.sdk)"
+    fi
 
     if [ "$STOCK_DEVICE_CHIPSET" = "MediaTek" ] && [ "$BUILD_BRAND" != "MTK" ]; then
         echo "- Adding mediatek bluetooth apex."
@@ -1777,6 +1785,12 @@ APPLY_STOCK_CONFIG() {
 
     local EXTRACTED_FIRM_DIR="$1"
 
+	local SDK="$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.build.version.sdk_full")"
+
+	if [[ -z "$SDK" ]]; then
+        local SDK="$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" ro.build.version.sdk)"
+    fi
+
 	if [ -f "${EXTRACTED_FIRM_DIR}/system/system/etc/floating_feature.xml" ]; then
         local TARGET_ROM_FLOATING_FEATURE="${EXTRACTED_FIRM_DIR}/system/system/etc/floating_feature.xml"
     elif [ -f "${EXTRACTED_FIRM_DIR}/vendor/etc/floating_feature.xml" ]; then
@@ -1818,6 +1832,7 @@ APPLY_STOCK_CONFIG() {
 		local STOCK_DEVICE_CHIPSET="$(grep -m1 '^STOCK_DEVICE_CHIPSET=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
 		local USE_ALT_SDHMS_APP="$(grep -m1 '^USE_ALT_SDHMS_APP=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
 		local STOCK_HAS_ESIM_SUPPORT="$(grep -m1 '^STOCK_HAS_ESIM_SUPPORT=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
+	    local SDHMS_MAX_SUPPORTED_OS_SDK="$(grep -m1 '^SDHMS_MAX_SUPPORTED_OS_SDK=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
 		export STOCK_DVFS_FILENAME="$(grep -m1 '^STOCK_DVFS_FILENAME=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
 		export STOCK_SIOP_POLICY_FILENAME="$(grep -m1 '^STOCK_SIOP_POLICY_FILENAME=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
     fi
@@ -1852,7 +1867,11 @@ APPLY_STOCK_CONFIG() {
 	FIX_CAMERA "$EXTRACTED_FIRM_DIR"
 
 	# Fix samsung device health manager service
-	UPDATE_SDHMS "$EXTRACTED_FIRM_DIR"
+    if [ "$USE_ALT_SDHMS_APP" = "TRUE" ]; then
+        if [ -n "$SDHMS_MAX_SUPPORTED_OS_SDK" ] && (( SDK > SDHMS_MAX_SUPPORTED_OS_SDK )); then
+            UPDATE_SDHMS "$EXTRACTED_FIRM_DIR"
+        fi
+    fi
 
     # Apply stock floating feature.
 	APPLY_STOCK_ROM_FLOATING_FEATURE "$STOCK_ROM_FLOATING_FEATURE" "$TARGET_ROM_FLOATING_FEATURE"
