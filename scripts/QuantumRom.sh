@@ -1501,7 +1501,8 @@ APPLY_STOCK_ROM_FLOATING_FEATURE() {
         return 1
     fi
 
-	local TARGET_ROM_FLOATING_FEATURE="$1"
+    local STOCK_ROM_FLOATING_FEATURE="$1"
+	local TARGET_ROM_FLOATING_FEATURE="$2"
 
     echo "Applying Stock Floating Feature."
 
