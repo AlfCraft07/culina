@@ -1867,8 +1867,10 @@ APPLY_STOCK_CONFIG() {
 	FIX_CAMERA "$EXTRACTED_FIRM_DIR"
 
 	# Fix samsung device health manager service
-    if [ "$USE_ALT_SDHMS_APP" = "TRUE" ] && (( SDK > SDHMS_MAX_SUPPORTED_OS_SDK )); then
-        UPDATE_SDHMS "$EXTRACTED_FIRM_DIR"
+    if [ "$USE_ALT_SDHMS_APP" = "TRUE" ]; then
+        if [ -n "$SDHMS_MAX_SUPPORTED_OS_SDK" ] && (( SDK > SDHMS_MAX_SUPPORTED_OS_SDK )); then
+            UPDATE_SDHMS "$EXTRACTED_FIRM_DIR"
+        fi
     fi
 
     # Apply stock floating feature.
