@@ -73,12 +73,12 @@ jobs:
 
       - name: Start Rom Build For ${{ github.event.inputs.STOCK_DEVICE }}
         run: |
-          sudo bash run.sh \
+          sudo bash runserial.sh \
             "${{ github.event.inputs.STOCK_DEVICE }}" \
             "${{ github.event.inputs.USE_UI_8_TETHERING_APEX }}" \
             "${{ github.event.inputs.TARGET_DEVICE }}" \
             "${{ github.event.inputs.TARGET_DEVICE_CSC }}" \
-            "${{ github.event.inputs.TARGET_DEVICE_IMEI }}" \
+            "${{ github.event.inputs.TARGET_DEVICE_SERIAL }}" \
             "${{ github.event.inputs.OUTPUT_FILESYSTEM }}"
 
       - name: Compress all .img & make zip file before upload.
