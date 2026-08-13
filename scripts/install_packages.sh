@@ -11,7 +11,7 @@ install_packages() {
     if [ "$OS" = "ubuntu" ] || [ "$OS" = "debian" ]; then
         echo "Installing for Ubuntu/Debian..."
         sudo apt update
-		sudo apt install -y p7zip-full lz4 liblz4-1 liblz4-dev libzstd1 libzstd-dev build-essential android-sdk-libsparse-utils f2fs-tools fuse2fs fuse e2fsprogs python3 python3-pip zipalign unzip openjdk-21-jdk jq perl xxd file kmod erofs-utils
+		sudo apt install -y p7zip-full lz4 liblz4-1 liblz4-dev libzstd1 libzstd-dev build-essential android-sdk-libsparse-utils f2fs-tools fuse2fs fuse e2fsprogs python3 python3-pip zipalign unzip openjdk-21-jdk jq perl xxd file kmod erofs-utils curl wget
 		sudo apt autoremove -y
 
     # Arch Linux

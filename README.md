@@ -113,8 +113,8 @@ In your forked repository, go to:
 
 ### Credits:
 #### 1. Samsung Firmware Downloader.
-- martinetd
-- https://github.com/martinetd/samloader
+- topjohnwu
+- https://github.com/topjohnwu/samloader-rs
 - Used for downloading Samsung firmware.
 
 #### 2. Multi Disabler.
