@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$#" -lt 6 ]; then
+if [ "$#" -lt 4 ]; then
     echo "Usage: $0 <STOCK_DEVICE> <TARGET_DEVICE> <USE_UI_8_TETHERING_APEX> <OUTPUT_FILESYSTEM>"
     exit 1
 fi
