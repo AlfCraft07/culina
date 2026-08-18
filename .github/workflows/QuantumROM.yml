@@ -1,4 +1,4 @@
-name: QuantumROM Tools (IMEI)
+name: QuantumROM Tools (General)
 
 on:
   workflow_dispatch:

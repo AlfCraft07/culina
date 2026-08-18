@@ -11,6 +11,7 @@ QT_DIR="$(pwd)"
 export lpmake="$QT_DIR/bin/lp/lpmake"
 export lpunpack="$QT_DIR/bin/lp/lpunpack"
 export make_ext4fs="$QT_DIR/bin/ext4/make_ext4fs"
+export samloader="$QT_DIR/bin/samloader/samloader"
 export make_f2fs="$QT_DIR/bin/f2fs-tools/mkfs.f2fs"
 export sload_f2fs="$QT_DIR/bin/f2fs-tools/sload.f2fs"
 export omc_decoder="$QT_DIR/bin/java/omc-decoder.jar"
@@ -20,11 +21,63 @@ export imgextractor_py="$QT_DIR/bin/py_scripts/imgextractor.py"
 
 chmod +x "$lpmake"
 chmod +x "$lpunpack"
+chmod +x "$samloader"
 chmod +x "$make_f2fs"
 chmod +x "$sload_f2fs"
 chmod +x "$mkfs_erofs"
 chmod +x "$make_ext4fs"
 chmod +x "$extract_erofs"
+
+
+DOWNLOAD_FIRMWARE() {
+    echo " "
+
+    if [ "$#" -lt 3 ]; then
+        echo -e "Usage: ${FUNCNAME[0]} <MODEL> <CSC> <DOWNLOAD_DIRECTORY> [VERSION]"
+        return 1
+    fi
+
+    local MODEL="$1"
+    local CSC="$2"
+    local DOWN_DIR="${3}/$MODEL"
+	local VERSION="${4:-}"
+
+    rm -rf "$DOWN_DIR"
+    mkdir -p "$DOWN_DIR"
+
+    echo -e "======================================"
+    echo -e "  Samsung FW Downloader   "
+    echo -e "======================================"
+    echo -e "MODEL: $MODEL | CSC: $CSC"
+
+    # Check version
+	if [ -z "$VERSION" ]; then
+        VERSION=$($samloader check-update --model "$MODEL" --region "$CSC")
+
+        if [ $? -ne 0 ] || [ -z "$VERSION" ]; then
+            echo "⛔️ MODEL/CSC not valid or no update found."
+            exit 1
+        fi
+    fi
+
+    if [ -n "$GITHUB_ENV" ]; then
+        echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+    fi
+
+    # Download Firmware
+	local VERSION_FILE="${VERSION//\//_}"
+    $samloader download --model "$MODEL" --region "$CSC" --version "$VERSION" --out-file "$DOWN_DIR/${VERSION_FILE}.zip"
+    if [ $? -ne 0 ]; then
+        echo -e "⛔️ Download failed. Check MODEL/CSC."
+        exit 1
+    fi
+
+	find "$DOWN_DIR" -type f -name "*.zip.enc*" -delete
+
+    # Show Firmware Info
+    local file_size=$(du -m "${DOWN_DIR}/${VERSION}.zip" 2>/dev/null | awk '{print $1}')
+    echo -e "Firmware Size: ${file_size} MB"
+}
 
 
 CHECK_FILE() {
@@ -148,54 +201,6 @@ DETECT_FILESYSTEM() {
             echo "unknown"
             ;;
     esac
-}
-
-
-DOWNLOAD_FIRMWARE() {
-    echo " "
-
-    if [ "$#" -lt 4 ]; then
-        echo -e "Usage: ${FUNCNAME[0]} <MODEL> <CSC> <IMEI> <DOWNLOAD_DIRECTORY> [VERSION]"
-        return 1
-    fi
-
-    local MODEL="$1"
-    local CSC="$2"
-    local IMEI="$3"
-    local DOWN_DIR="${4}/$MODEL"
-
-    rm -rf "$DOWN_DIR"
-    mkdir -p "$DOWN_DIR"
-
-    echo -e "======================================"
-    echo -e "  Samsung FW Downloader   "
-    echo -e "======================================"
-    echo -e "MODEL: $MODEL | CSC: $CSC"
-
-    VERSION=$(python3 -m samloader -m "$MODEL" -r "$CSC" -s "$SERIAL" checkupdate 2>&1)
-
-    if [ $? -ne 0 ] || [ -z "$VERSION" ]; then
-        echo -e "⛔️ MODEL/CSC/IMEI not valid or no update found."
-        echo -e "Error: $VERSION"
-        return 1
-    fi
-
-    if [ -n "$GITHUB_ENV" ]; then
-        echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-    fi
-
-    # --- Step 2: Download Firmware ---
-    python3 -m samloader -m "$MODEL" -r "$CSC" -s "$SERIAL" download -O "$DOWN_DIR"
-    if [ $? -ne 0 ]; then
-        echo -e "⛔️ Download failed. Check SERIAL/MODEL/CSC."
-        exit 1
-    fi
-
-	find "$DOWN_DIR" -type f -name "*.zip.enc*" -delete
-
-    # --- Show Firmware Info ---
-    local file_size=$(du -m "${DOWN_DIR}"/${MODEL}_*_fac.zip 2>/dev/null | cut -f1)
-    echo -e "Firmware Size: ${file_size} MB"
 }
 
 
@@ -591,82 +596,82 @@ INSTALL_FRAMEWORK() {
 }
 
 
-# DECOMPILE() {
-#     echo " "
+DECOMPILE() {
+    echo " "
 
-#     if [ "$#" -ne 4 ]; then
-#         echo -e "Usage: DECOMPILE <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <FILE> <DECOMPILE_DIR>"
-#         return 1
-#     fi
+    if [ "$#" -ne 4 ]; then
+        echo -e "Usage: DECOMPILE <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <FILE> <DECOMPILE_DIR>"
+        return 1
+    fi
 
-#     # apktool version-3
-# 	# d = decompile
-# 	# --force = force delete target decompile directory before decompile
-# 	# --no-src = don't decompile dex file
-# 	# --no-res = don't decode resources
-# 	# --match-original = decompile everything as original
-# 	# --frame-path = framework path
-# 	# -o = decompile directory
-# 	local APKTOOL="$1"
-# 	local FRAMEWORK_DIR="$2"
-#     local FILE="$3"
-#     local DECOMPILE_DIR="$4"
-#     local BASENAME="$(basename "${FILE%.*}")"
-#     local OUT="$DECOMPILE_DIR/$BASENAME"
+    # apktool version-3
+	# d = decompile
+	# --force = force delete target decompile directory before decompile
+	# --no-src = don't decompile dex file
+	# --no-res = don't decode resources
+	# --match-original = decompile everything as original
+	# --frame-path = framework path
+	# -o = decompile directory
+	local APKTOOL="$1"
+	local FRAMEWORK_DIR="$2"
+    local FILE="$3"
+    local DECOMPILE_DIR="$4"
+    local BASENAME="$(basename "${FILE%.*}")"
+    local OUT="$DECOMPILE_DIR/$BASENAME"
 
-#     echo -e "Decompiling: $FILE"
+    echo -e "Decompiling: $FILE"
 
-# 	if [ ! -f "$FILE" ]; then
-#         echo -e "- File not found: $FILE"
-#         return 1
-#     fi
+	if [ ! -f "$FILE" ]; then
+        echo -e "- File not found: $FILE"
+        return 1
+    fi
 
-# 	rm -rf "$OUT"
-#     java -jar "$APKTOOL" d --force --frame-path "$FRAMEWORK_DIR" --match-original "$FILE" -o "$OUT"
-# }
+	rm -rf "$OUT"
+    java -jar "$APKTOOL" d --force --frame-path "$FRAMEWORK_DIR" --match-original "$FILE" -o "$OUT"
+}
 
 
-# RECOMPILE() {
-#     echo " "
+RECOMPILE() {
+    echo " "
 
-# 	if [ "$#" -ne 4 ]; then
-#         echo -e "Usage: ${FUNCNAME[0]} <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <DECOMPILED_DIR> <RECOMPILE_DIR>"
-#         return 1
-#     fi
+	if [ "$#" -ne 4 ]; then
+        echo -e "Usage: ${FUNCNAME[0]} <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <DECOMPILED_DIR> <RECOMPILE_DIR>"
+        return 1
+    fi
 
-#     # apktool version-3
-# 	# b = recompile
-# 	# --copy-original = use original manifest
-# 	# --frame-path = framework path
-# 	# -o = output /recompile file directory with filename
-# 	local APKTOOL="$1"
-# 	local FRAMEWORK_DIR="$2"
-# 	local DECOMPILED_DIR="$3"
-#     local RECOMPILE_DIR="$4"
+    # apktool version-3
+	# b = recompile
+	# --copy-original = use original manifest
+	# --frame-path = framework path
+	# -o = output /recompile file directory with filename
+	local APKTOOL="$1"
+	local FRAMEWORK_DIR="$2"
+	local DECOMPILED_DIR="$3"
+    local RECOMPILE_DIR="$4"
 	
-# 	echo -e "Recompiling: $DECOMPILED_DIR"
+	echo -e "Recompiling: $DECOMPILED_DIR"
 
-# 	if [ ! -d "$DECOMPILED_DIR" ]; then
-#         echo "- Directory not found: $DECOMPILED_DIR"
-#         return 1
-#     fi
+	if [ ! -d "$DECOMPILED_DIR" ]; then
+        echo "- Directory not found: $DECOMPILED_DIR"
+        return 1
+    fi
 
-#     local org_file_name=$(awk '/^apkFileName:/ {print $2}' "$DECOMPILED_DIR/apktool.yml")
-#     local name="${org_file_name%.*}"
-#     local ext="${org_file_name##*.}"
-#     local built_file="$RECOMPILE_DIR/${name}.$ext"
+    local org_file_name=$(awk '/^apkFileName:/ {print $2}' "$DECOMPILED_DIR/apktool.yml")
+    local name="${org_file_name%.*}"
+    local ext="${org_file_name##*.}"
+    local built_file="$RECOMPILE_DIR/${name}.$ext"
 
-#     java -jar "$APKTOOL" b "$DECOMPILED_DIR" --copy-original --frame-path "$FRAMEWORK_DIR" -o "$built_file"
-#     rm -rf "$DECOMPILED_DIR"
+    java -jar "$APKTOOL" b "$DECOMPILED_DIR" --copy-original --frame-path "$FRAMEWORK_DIR" -o "$built_file"
+    rm -rf "$DECOMPILED_DIR"
 
-# 	# Zipalign
-# 	# echo " "
-# 	# if [[ "$ext" == "apk" ]]; then
-# 	    # echo -e "Zipaligning: $built_file to $final_file"
-#         # zipalign -v 4 "$built_file" "$final_file" >/dev/null 2>&1
-# 		# rm -rf "$built_file"
-#     # fi
-# }
+	# Zipalign
+	# echo " "
+	# if [[ "$ext" == "apk" ]]; then
+	    # echo -e "Zipaligning: $built_file to $final_file"
+        # zipalign -v 4 "$built_file" "$final_file" >/dev/null 2>&1
+		# rm -rf "$built_file"
+    # fi
+}
 
 
 REPLACE_SMALI_METHOD() {
@@ -736,99 +741,99 @@ HEX_PATCH() {
 }
 
 
-# PATCH_FLAG_SECURE() {
-# 	echo " "
+PATCH_FLAG_SECURE() {
+	echo " "
 
-# 	if [ "$#" -ne 2 ]; then
-#         echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRMWARE_DIRECTORY> <EXTRACTED_SERVICES_DIRECTORY>"
-#         return 1
-#     fi
+	if [ "$#" -ne 2 ]; then
+        echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRMWARE_DIRECTORY> <EXTRACTED_SERVICES_DIRECTORY>"
+        return 1
+    fi
 
-# 	# https://github.com/ShaDisNX255/NcX_Stock/commit/c2cc85818df4fe040b4f89ca8f9b78e939b211b4
-#     # https://forum.xda-developers.com/t/mods-samsung-not-android-mods-collection-exynos.3772017/post-86811691
-# 	# https://xdaforums.com/t/module-smalipatcherex-1-2-2.4627905/
+	# https://github.com/ShaDisNX255/NcX_Stock/commit/c2cc85818df4fe040b4f89ca8f9b78e939b211b4
+    # https://forum.xda-developers.com/t/mods-samsung-not-android-mods-collection-exynos.3772017/post-86811691
+	# https://xdaforums.com/t/module-smalipatcherex-1-2-2.4627905/
 
-#     local FILE_1 FILE_2 FILE_3
+    local FILE_1 FILE_2 FILE_3
 
-#     local REPLACE_BODY_1='
-#     .locals 1
+    local REPLACE_BODY_1='
+    .locals 1
 
-#     const/4 v0, 0x0
+    const/4 v0, 0x0
 
-#     return v0
-#     '
+    return v0
+    '
 
-#     local REPLACE_BODY_2='
-#     .locals 1
+    local REPLACE_BODY_2='
+    .locals 1
 
-#     invoke-static {}, Ljava/util/Collections;->emptyList()Ljava/util/List;
-#     move-result-object v0
-#     return-object v0
-#     '
+    invoke-static {}, Ljava/util/Collections;->emptyList()Ljava/util/List;
+    move-result-object v0
+    return-object v0
+    '
 
-# 	echo -e "Patching flag secure."
+	echo -e "Patching flag secure."
 
-#     local EXTRACTED_FIRM_DIR="$1"
-# 	local WORK_DIR="$2"
+    local EXTRACTED_FIRM_DIR="$1"
+	local WORK_DIR="$2"
 
-# 	if [ ! -d "$WORK_DIR" ]; then
-#         echo "- Directory not found: $WORK_DIR"
-#         return 1
-#     fi
+	if [ ! -d "$WORK_DIR" ]; then
+        echo "- Directory not found: $WORK_DIR"
+        return 1
+    fi
 
-# 	local ANDROID_VERSION=$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.system.build.version.release")
+	local ANDROID_VERSION=$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.system.build.version.release")
 
-# 	echo "Android version: $ANDROID_VERSION"
+	echo "Android version: $ANDROID_VERSION"
 
-# 	case "$ANDROID_VERSION" in
-# 	    10)
-#             FILE_3="${WORK_DIR}/smali/com/android/server/devicepolicy/DevicePolicyManagerService.smali"
-# 	        METHOD_NAME_1=".method public getScreenCaptureDisabled(Landroid/content/ComponentName;I)Z"
-#             ;;
-#         11)
-#             FILE_1="${WORK_DIR}/smali_classes2/com/android/server/wm/WindowState.smali"
-#             METHOD_NAME_1=".method isSecureLocked()Z"
-#             ;;
-#         12)
-#             FILE_1="${WORK_DIR2}/smali_classes3/com/android/server/wm/WindowState.smali"
-#             METHOD_NAME_1=".method isSecureLocked()Z"
-#             ;;
-#         13)
-#             FILE_1="${WORK_DIR}/smali_classes3/com/android/server/wm/WindowState.smali"
-#             METHOD_NAME_1=".method public isSecureLocked()Z"
-#             ;;
-#         14)
-#             FILE_1="${WORK_DIR}/smali_classes3/com/android/server/wm/WindowState.smali"
-#             METHOD_NAME_1=".method public isSecureLocked()Z"
-# 			FILE_2="${WORK_DIR}/smali_classes3/com/android/server/wm/WindowManagerService.smali"
-#             METHOD_NAME_2=".method public notifyScreenshotListeners(I)Ljava/util/List;"
-#             ;;
-#         15|16|17)
-#             FILE_1="${WORK_DIR}/smali_classes2/com/android/server/wm/WindowState.smali"
-#             METHOD_NAME_1=".method public final isSecureLocked()Z"
-# 			FILE_2="${WORK_DIR}/smali_classes2/com/android/server/wm/WindowManagerService.smali"
-#             METHOD_NAME_2=".method public final notifyScreenshotListeners(I)Ljava/util/List;"
-# 			FILE_3="${WORK_DIR}/smali/com/android/server/devicepolicy/DevicePolicyManagerService.smali"
-# 			METHOD_NAME_3=".method public final getScreenCaptureDisabled(Landroid/content/ComponentName;IZ)Z"
-#             ;;
-#         *)
-#             echo "- Unsupported Android version: $ANDROID_VERSION"
-#             return 1
-#             ;;
-#     esac
+	case "$ANDROID_VERSION" in
+	    10)
+            FILE_3="${WORK_DIR}/smali/com/android/server/devicepolicy/DevicePolicyManagerService.smali"
+	        METHOD_NAME_1=".method public getScreenCaptureDisabled(Landroid/content/ComponentName;I)Z"
+            ;;
+        11)
+            FILE_1="${WORK_DIR}/smali_classes2/com/android/server/wm/WindowState.smali"
+            METHOD_NAME_1=".method isSecureLocked()Z"
+            ;;
+        12)
+            FILE_1="${WORK_DIR2}/smali_classes3/com/android/server/wm/WindowState.smali"
+            METHOD_NAME_1=".method isSecureLocked()Z"
+            ;;
+        13)
+            FILE_1="${WORK_DIR}/smali_classes3/com/android/server/wm/WindowState.smali"
+            METHOD_NAME_1=".method public isSecureLocked()Z"
+            ;;
+        14)
+            FILE_1="${WORK_DIR}/smali_classes3/com/android/server/wm/WindowState.smali"
+            METHOD_NAME_1=".method public isSecureLocked()Z"
+			FILE_2="${WORK_DIR}/smali_classes3/com/android/server/wm/WindowManagerService.smali"
+            METHOD_NAME_2=".method public notifyScreenshotListeners(I)Ljava/util/List;"
+            ;;
+        15|16|17)
+            FILE_1="${WORK_DIR}/smali_classes2/com/android/server/wm/WindowState.smali"
+            METHOD_NAME_1=".method public final isSecureLocked()Z"
+			FILE_2="${WORK_DIR}/smali_classes2/com/android/server/wm/WindowManagerService.smali"
+            METHOD_NAME_2=".method public final notifyScreenshotListeners(I)Ljava/util/List;"
+			FILE_3="${WORK_DIR}/smali/com/android/server/devicepolicy/DevicePolicyManagerService.smali"
+			METHOD_NAME_3=".method public final getScreenCaptureDisabled(Landroid/content/ComponentName;IZ)Z"
+            ;;
+        *)
+            echo "- Unsupported Android version: $ANDROID_VERSION"
+            return 1
+            ;;
+    esac
 
-#     if [[ -v FILE_1 ]]; then
-#         REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_1" "$REPLACE_BODY_1"
-#     fi
+    if [[ -v FILE_1 ]]; then
+        REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_1" "$REPLACE_BODY_1"
+    fi
 
-#     if [[ -v FILE_2 ]]; then
-#         REPLACE_SMALI_METHOD "$FILE_2" "$METHOD_NAME_2" "$REPLACE_BODY_2"
-#     fi
+    if [[ -v FILE_2 ]]; then
+        REPLACE_SMALI_METHOD "$FILE_2" "$METHOD_NAME_2" "$REPLACE_BODY_2"
+    fi
 
-# 	if [[ -v FILE_3 ]]; then
-#         REPLACE_SMALI_METHOD "$FILE_3" "$METHOD_NAME_3" "$REPLACE_BODY_1"
-#     fi
-# }
+	if [[ -v FILE_3 ]]; then
+        REPLACE_SMALI_METHOD "$FILE_3" "$METHOD_NAME_3" "$REPLACE_BODY_1"
+    fi
+}
 
 
 PATCH_SECURE_FOLDER() {
@@ -1338,7 +1343,7 @@ PATCH_SELINUX() {
 
     echo -e "Patching selinux."
 
-	UNSUPPORTED_SELINUX=("audiomirroring" "fabriccrypto" "hal_dsms_default" "qb_id_prop" "hal_dsms_service" "proc_compaction_proactiveness" "sbauth" "ker_app" "kpp_app" "kpp_data" "attiqi_app" "kpoc_charger" "sec_diag" "mosey_app" "vendor_smcinvoke_device")
+	UNSUPPORTED_SELINUX=("audiomirroring" "fabriccrypto" "hal_dsms_default" "qb_id_prop" "hal_dsms_service" "proc_compaction_proactiveness" "sbauth" "ker_app" "kpp_app" "kpp_data" "attiqi_app" "kpoc_charger" "sec_diag" "mosey_app" "vendor_smcinvoke_device" "perf_prop" "uwb_regulation_skip_prop")
 
     if [ -d "${EXTRACTED_FIRM_DIR}/system" ]; then
 	    echo "- Patching selinux for system"
@@ -2292,7 +2297,7 @@ APPLY_CUSTOM_FEATURES() {
 
 	local EXTRACTED_FIRM_DIR="$1"
 
-	echo -e "Applying useful features."
+	echo -e "Applying usefull features."
 
     if [ -d "$(pwd)/QuantumROM/usefull_things" ]; then
         cp -a "$(pwd)/QuantumROM/usefull_things/." "$(pwd)/OUT"
@@ -2308,7 +2313,8 @@ APPLY_CUSTOM_FEATURES() {
     BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "fw.max_users" "5"
     BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "fw.show_multiuserui" "1"
     BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "wifi.interface=" "wlan0"
-    BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "wlan.wfd.hdcp" "disable"
+    BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "wlan.wfd.hdcp" "disabled"
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.telephony.sim_slots.count" "2"
 	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.surface_flinger.protected_contents" "true"
 	BUILD_PROP "$EXTRACTED_FIRM_DIR" "product" "ro.product.locale" "en-US"
 

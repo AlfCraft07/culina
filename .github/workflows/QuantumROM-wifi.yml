@@ -1,4 +1,4 @@
-name: QuantumROM Tools (Serial)
+name: QuantumROM Tools (gta4xlve)
 
 on:
   workflow_dispatch:
@@ -19,10 +19,9 @@ on:
         description: "TARGET_DEVICE_CSC."
         required: true
         default: "EUX"
-      TARGET_DEVICE_SERIAL:
-        description: "TARGET_DEVICE_SERIAL."
-        required: true
-        default: "R52X707GQGX"
+      TARGET_FW_VERSION:
+        description: "Specific Samsung firmware version (PDA/CSC/MODEM) OR (AP/CSC/CP)"
+        required: false
       OUTPUT_FILESYSTEM:
         description: "OUTPUT_FILESYSTEM. e.g erofs / ext4 / f2fs"
         required: true
@@ -56,29 +55,26 @@ jobs:
       - name: Install Dependencies.
         run: |
           sudo apt update
-          sudo apt install -y p7zip-full lz4 liblz4-1 liblz4-dev libzstd1 libzstd-dev build-essential android-sdk-libsparse-utils f2fs-tools fuse2fs fuse e2fsprogs python3 python3-pip zipalign unzip openjdk-21-jdk jq perl xxd kmod erofs-utils linux-modules-extra-$(uname -r)
+          sudo apt install -y p7zip-full lz4 liblz4-1 liblz4-dev libzstd1 libzstd-dev build-essential android-sdk-libsparse-utils f2fs-tools fuse2fs fuse e2fsprogs python3 python3-pip zipalign unzip openjdk-21-jdk jq perl xxd kmod erofs-utils curl wget linux-modules-extra-$(uname -r)
           sudo modprobe f2fs
-          sudo pip3 install git+https://github.com/SN-Abdullah-Al-Noman/samloader.git --break-system-packages
           mkdir -p FW WORK OUT
 
       - name: Download firmware ▶️ ${{ github.event.inputs.TARGET_DEVICE }} - ${{ github.event.inputs.TARGET_DEVICE_CSC }}
         run: |
-          source scripts/QuantumRom-serial.sh
-          DOWNLOAD_FIRMWARE "${{ github.event.inputs.TARGET_DEVICE }}" "${{ github.event.inputs.TARGET_DEVICE_CSC }}" "${{ github.event.inputs.TARGET_DEVICE_SERIAL }}" "FW" "${{ github.event.inputs.TARGET_FW_VERSION }}"
+          source scripts/QuantumRom-wifi.sh
+          DOWNLOAD_FIRMWARE "${{ github.event.inputs.TARGET_DEVICE }}" "${{ github.event.inputs.TARGET_DEVICE_CSC }}" "FW" "${{ github.event.inputs.TARGET_FW_VERSION }}"
 
       - name: Extract firmware
         run: |
-          source scripts/QuantumRom-serial.sh
+          source scripts/QuantumRom-wifi.sh
           EXTRACT_FIRMWARE "FW/${{ github.event.inputs.TARGET_DEVICE }}"
 
       - name: Start Rom Build For ${{ github.event.inputs.STOCK_DEVICE }}
         run: |
           sudo bash runserial.sh \
             "${{ github.event.inputs.STOCK_DEVICE }}" \
-            "${{ github.event.inputs.USE_UI_8_TETHERING_APEX }}" \
             "${{ github.event.inputs.TARGET_DEVICE }}" \
-            "${{ github.event.inputs.TARGET_DEVICE_CSC }}" \
-            "${{ github.event.inputs.TARGET_DEVICE_SERIAL }}" \
+            "${{ github.event.inputs.USE_UI_8_TETHERING_APEX }}" \
             "${{ github.event.inputs.OUTPUT_FILESYSTEM }}"
 
       - name: Compress all .img & make zip file before upload.
