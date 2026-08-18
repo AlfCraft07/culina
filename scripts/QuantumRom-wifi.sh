@@ -596,82 +596,82 @@ INSTALL_FRAMEWORK() {
 }
 
 
-DECOMPILE() {
-    echo " "
+# DECOMPILE() {
+#     echo " "
 
-    if [ "$#" -ne 4 ]; then
-        echo -e "Usage: DECOMPILE <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <FILE> <DECOMPILE_DIR>"
-        return 1
-    fi
+#     if [ "$#" -ne 4 ]; then
+#         echo -e "Usage: DECOMPILE <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <FILE> <DECOMPILE_DIR>"
+#         return 1
+#     fi
 
-    # apktool version-3
-	# d = decompile
-	# --force = force delete target decompile directory before decompile
-	# --no-src = don't decompile dex file
-	# --no-res = don't decode resources
-	# --match-original = decompile everything as original
-	# --frame-path = framework path
-	# -o = decompile directory
-	local APKTOOL="$1"
-	local FRAMEWORK_DIR="$2"
-    local FILE="$3"
-    local DECOMPILE_DIR="$4"
-    local BASENAME="$(basename "${FILE%.*}")"
-    local OUT="$DECOMPILE_DIR/$BASENAME"
+#     # apktool version-3
+# 	# d = decompile
+# 	# --force = force delete target decompile directory before decompile
+# 	# --no-src = don't decompile dex file
+# 	# --no-res = don't decode resources
+# 	# --match-original = decompile everything as original
+# 	# --frame-path = framework path
+# 	# -o = decompile directory
+# 	local APKTOOL="$1"
+# 	local FRAMEWORK_DIR="$2"
+#     local FILE="$3"
+#     local DECOMPILE_DIR="$4"
+#     local BASENAME="$(basename "${FILE%.*}")"
+#     local OUT="$DECOMPILE_DIR/$BASENAME"
 
-    echo -e "Decompiling: $FILE"
+#     echo -e "Decompiling: $FILE"
 
-	if [ ! -f "$FILE" ]; then
-        echo -e "- File not found: $FILE"
-        return 1
-    fi
+# 	if [ ! -f "$FILE" ]; then
+#         echo -e "- File not found: $FILE"
+#         return 1
+#     fi
 
-	rm -rf "$OUT"
-    java -jar "$APKTOOL" d --force --frame-path "$FRAMEWORK_DIR" --match-original "$FILE" -o "$OUT"
-}
+# 	rm -rf "$OUT"
+#     java -jar "$APKTOOL" d --force --frame-path "$FRAMEWORK_DIR" --match-original "$FILE" -o "$OUT"
+# }
 
 
-RECOMPILE() {
-    echo " "
+# RECOMPILE() {
+#     echo " "
 
-	if [ "$#" -ne 4 ]; then
-        echo -e "Usage: ${FUNCNAME[0]} <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <DECOMPILED_DIR> <RECOMPILE_DIR>"
-        return 1
-    fi
+# 	if [ "$#" -ne 4 ]; then
+#         echo -e "Usage: ${FUNCNAME[0]} <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <DECOMPILED_DIR> <RECOMPILE_DIR>"
+#         return 1
+#     fi
 
-    # apktool version-3
-	# b = recompile
-	# --copy-original = use original manifest
-	# --frame-path = framework path
-	# -o = output /recompile file directory with filename
-	local APKTOOL="$1"
-	local FRAMEWORK_DIR="$2"
-	local DECOMPILED_DIR="$3"
-    local RECOMPILE_DIR="$4"
+#     # apktool version-3
+# 	# b = recompile
+# 	# --copy-original = use original manifest
+# 	# --frame-path = framework path
+# 	# -o = output /recompile file directory with filename
+# 	local APKTOOL="$1"
+# 	local FRAMEWORK_DIR="$2"
+# 	local DECOMPILED_DIR="$3"
+#     local RECOMPILE_DIR="$4"
 	
-	echo -e "Recompiling: $DECOMPILED_DIR"
+# 	echo -e "Recompiling: $DECOMPILED_DIR"
 
-	if [ ! -d "$DECOMPILED_DIR" ]; then
-        echo "- Directory not found: $DECOMPILED_DIR"
-        return 1
-    fi
+# 	if [ ! -d "$DECOMPILED_DIR" ]; then
+#         echo "- Directory not found: $DECOMPILED_DIR"
+#         return 1
+#     fi
 
-    local org_file_name=$(awk '/^apkFileName:/ {print $2}' "$DECOMPILED_DIR/apktool.yml")
-    local name="${org_file_name%.*}"
-    local ext="${org_file_name##*.}"
-    local built_file="$RECOMPILE_DIR/${name}.$ext"
+#     local org_file_name=$(awk '/^apkFileName:/ {print $2}' "$DECOMPILED_DIR/apktool.yml")
+#     local name="${org_file_name%.*}"
+#     local ext="${org_file_name##*.}"
+#     local built_file="$RECOMPILE_DIR/${name}.$ext"
 
-    java -jar "$APKTOOL" b "$DECOMPILED_DIR" --copy-original --frame-path "$FRAMEWORK_DIR" -o "$built_file"
-    rm -rf "$DECOMPILED_DIR"
+#     java -jar "$APKTOOL" b "$DECOMPILED_DIR" --copy-original --frame-path "$FRAMEWORK_DIR" -o "$built_file"
+#     rm -rf "$DECOMPILED_DIR"
 
-	# Zipalign
-	# echo " "
-	# if [[ "$ext" == "apk" ]]; then
-	    # echo -e "Zipaligning: $built_file to $final_file"
-        # zipalign -v 4 "$built_file" "$final_file" >/dev/null 2>&1
-		# rm -rf "$built_file"
-    # fi
-}
+# 	# Zipalign
+# 	# echo " "
+# 	# if [[ "$ext" == "apk" ]]; then
+# 	    # echo -e "Zipaligning: $built_file to $final_file"
+#         # zipalign -v 4 "$built_file" "$final_file" >/dev/null 2>&1
+# 		# rm -rf "$built_file"
+#     # fi
+# }
 
 
 REPLACE_SMALI_METHOD() {
@@ -836,77 +836,77 @@ PATCH_FLAG_SECURE() {
 }
 
 
-PATCH_SECURE_FOLDER() {
-    echo " "
+# PATCH_SECURE_FOLDER() {
+#     echo " "
 
-	if [ "$#" -ne 2 ]; then
-        echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRMWARE_DIRECTORY> <EXTRACTED_SERVICES_DIRECTORY>"
-        return 1
-    fi
+# 	if [ "$#" -ne 2 ]; then
+#         echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRMWARE_DIRECTORY> <EXTRACTED_SERVICES_DIRECTORY>"
+#         return 1
+#     fi
 
-	# https://forum.xda-developers.com/t/mods-samsung-not-android-mods-collection-exynos.3772017/post-86770885
-	local REPLACE_BODY_1='
-    .locals 1
+# 	# https://forum.xda-developers.com/t/mods-samsung-not-android-mods-collection-exynos.3772017/post-86770885
+# 	local REPLACE_BODY_1='
+#     .locals 1
  
-    const/4 v0, 0x0
+#     const/4 v0, 0x0
  
-    return v0
-    '
+#     return v0
+#     '
 
-    echo -e "Patching secure folder."
+#     echo -e "Patching secure folder."
 
-	local EXTRACTED_FIRM_DIR="$1"
-	local WORK_DIR="$2"
-	local ANDROID_VERSION=$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.system.build.version.release")
+# 	local EXTRACTED_FIRM_DIR="$1"
+# 	local WORK_DIR="$2"
+# 	local ANDROID_VERSION=$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.system.build.version.release")
 
-	echo "Android version: $ANDROID_VERSION"
+# 	echo "Android version: $ANDROID_VERSION"
 
-	case "$ANDROID_VERSION" in
-        12|13|14)
-            FILE_1="${WORK_DIR}/smali_classes2/com/android/server/knox/dar/DarManagerService.smali"
-			METHOD_NAME_1=".method public isDeviceRootKeyInstalled()Z"
-	        METHOD_NAME_2=".method public isKnoxKeyInstallable()Z"
-			REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_1" "$REPLACE_BODY_1"
-            REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_2" "$REPLACE_BODY_1"
-            ;;
-        15|16|17)
-            FILE_1="${WORK_DIR}/smali/com/android/server/knox/dar/DarManagerService.smali"
-			METHOD_NAME_1=".method public final isDeviceRootKeyInstalled()Z"
-	        METHOD_NAME_2=".method public final isKnoxKeyInstallable()Z"
-			REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_1" "$REPLACE_BODY_1"
-            REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_2" "$REPLACE_BODY_1"
-            ;;
-        *)
-            echo "- Unsupported Android version: $ANDROID_VERSION"
-            return 1
-            ;;
-    esac
-}
+# 	case "$ANDROID_VERSION" in
+#         12|13|14)
+#             FILE_1="${WORK_DIR}/smali_classes2/com/android/server/knox/dar/DarManagerService.smali"
+# 			METHOD_NAME_1=".method public isDeviceRootKeyInstalled()Z"
+# 	        METHOD_NAME_2=".method public isKnoxKeyInstallable()Z"
+# 			REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_1" "$REPLACE_BODY_1"
+#             REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_2" "$REPLACE_BODY_1"
+#             ;;
+#         15|16|17)
+#             FILE_1="${WORK_DIR}/smali/com/android/server/knox/dar/DarManagerService.smali"
+# 			METHOD_NAME_1=".method public final isDeviceRootKeyInstalled()Z"
+# 	        METHOD_NAME_2=".method public final isKnoxKeyInstallable()Z"
+# 			REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_1" "$REPLACE_BODY_1"
+#             REPLACE_SMALI_METHOD "$FILE_1" "$METHOD_NAME_2" "$REPLACE_BODY_1"
+#             ;;
+#         *)
+#             echo "- Unsupported Android version: $ANDROID_VERSION"
+#             return 1
+#             ;;
+#     esac
+# }
 
 
-PATCH_PRIVATE_SHARE() {
-    echo " "
+# PATCH_PRIVATE_SHARE() {
+#     echo " "
 
-	if [ "$#" -ne 1 ]; then
-        echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
-        return 1
-    fi
+# 	if [ "$#" -ne 1 ]; then
+#         echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
+#         return 1
+#     fi
 
-    echo -e "Patching private share."
-	# https://forum.xda-developers.com/t/mods-samsung-not-android-mods-collection-exynos.3772017/post-86805769
+#     echo -e "Patching private share."
+# 	# https://forum.xda-developers.com/t/mods-samsung-not-android-mods-collection-exynos.3772017/post-86805769
 	
-    local FILE="${1}/smali/com/samsung/android/security/keystore/AttestParameterSpec.smali"
-    # patch .method public isVerifiableIntegrity()Z
-    local METHOD_NAME=".method public isVerifiableIntegrity()Z"
-    local REPLACE_BODY='
-    .locals 1
+#     local FILE="${1}/smali/com/samsung/android/security/keystore/AttestParameterSpec.smali"
+#     # patch .method public isVerifiableIntegrity()Z
+#     local METHOD_NAME=".method public isVerifiableIntegrity()Z"
+#     local REPLACE_BODY='
+#     .locals 1
  
-    const/4 v0, 0x1
+#     const/4 v0, 0x1
  
-    return v0
-    '
-	REPLACE_SMALI_METHOD "$FILE" "$METHOD_NAME" "$REPLACE_BODY"
-}
+#     return v0
+#     '
+# 	REPLACE_SMALI_METHOD "$FILE" "$METHOD_NAME" "$REPLACE_BODY"
+# }
 
 
 DISABLE_SIGNATURE_VERIFICATION() {
@@ -985,57 +985,57 @@ UPDATE_SDHMS() {
 }
 
 
-# PATCH_SSRM() {
-#     echo " "
+PATCH_SSRM() {
+    echo " "
 
-#     if [ "$#" -ne 1 ]; then
-#         echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_SSRM_DIRECTORY>"
-#         return 1
-#     fi
+    if [ "$#" -ne 1 ]; then
+        echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_SSRM_DIRECTORY>"
+        return 1
+    fi
 
-#     local SSRM_DIR="$1"
-#     local FILE="$SSRM_DIR/smali/com/android/server/ssrm/Feature.smali"
+    local SSRM_DIR="$1"
+    local FILE="$SSRM_DIR/smali/com/android/server/ssrm/Feature.smali"
 
-#     echo -e "Patching SSRM."
-#     echo -e "- Patching: $FILE"
+    echo -e "Patching SSRM."
+    echo -e "- Patching: $FILE"
 
-# 	if [ ! -f "$FILE" ]; then
-# 	    echo "- File name not found: $FILE"
-# 		return
-# 	fi
+	if [ ! -f "$FILE" ]; then
+	    echo "- File name not found: $FILE"
+		return
+	fi
 
-#     if FOUND=$(grep -E 'const-string [vp][0-9]+, "dvfs_policy_.*_xx"' "$FILE"); then
-#         echo "- Found DVFS policy: $FOUND"
+    if FOUND=$(grep -E 'const-string [vp][0-9]+, "dvfs_policy_.*_xx"' "$FILE"); then
+        echo "- Found DVFS policy: $FOUND"
 
-#         if [ -n "$STOCK_DVFS_FILENAME" ]; then
-#             sed -i -E \
-#             's|(const-string [vp][0-9]+, ")dvfs_policy_[^"]*_[^"]*(")|\1'"$STOCK_DVFS_FILENAME"'\2|' \
-#             "$FILE"
+        if [ -n "$STOCK_DVFS_FILENAME" ]; then
+            sed -i -E \
+            's|(const-string [vp][0-9]+, ")dvfs_policy_[^"]*_[^"]*(")|\1'"$STOCK_DVFS_FILENAME"'\2|' \
+            "$FILE"
 
-#             echo "- DVFS policy file name replaced to: ${STOCK_DVFS_FILENAME}"
-#         else
-#             echo "- STOCK_DVFS_FILENAME is empty. Skipping replacement."
-#         fi
-#     else
-#         echo "- DVFS policy file name not found."
-#     fi
+            echo "- DVFS policy file name replaced to: ${STOCK_DVFS_FILENAME}"
+        else
+            echo "- STOCK_DVFS_FILENAME is empty. Skipping replacement."
+        fi
+    else
+        echo "- DVFS policy file name not found."
+    fi
 
-#     if FOUND=$(grep -E 'const-string [vp][0-9]+, "siop_[^"]*_[^"]*"' "$FILE"); then
-#         echo "- Found SIOP policy: $FOUND"
+    if FOUND=$(grep -E 'const-string [vp][0-9]+, "siop_[^"]*_[^"]*"' "$FILE"); then
+        echo "- Found SIOP policy: $FOUND"
 
-#         if [ -n "$STOCK_SIOP_POLICY_FILENAME" ]; then
-#             sed -i -E \
-#             's|(const-string [vp][0-9]+, ")siop_[^"]*_[^"]*(")|\1'"$STOCK_SIOP_POLICY_FILENAME"'\2|' \
-#             "$FILE"
+        if [ -n "$STOCK_SIOP_POLICY_FILENAME" ]; then
+            sed -i -E \
+            's|(const-string [vp][0-9]+, ")siop_[^"]*_[^"]*(")|\1'"$STOCK_SIOP_POLICY_FILENAME"'\2|' \
+            "$FILE"
 
-#             echo "- SIOP policy file name replaced to: ${STOCK_SIOP_POLICY_FILENAME}"
-#         else
-#             echo "- STOCK_SIOP_POLICY_FILENAME is empty. Skipping replacement."
-#         fi
-#     else
-#         echo "- SIOP policy file name not found."
-#     fi
-# }
+            echo "- SIOP policy file name replaced to: ${STOCK_SIOP_POLICY_FILENAME}"
+        else
+            echo "- STOCK_SIOP_POLICY_FILENAME is empty. Skipping replacement."
+        fi
+    else
+        echo "- SIOP policy file name not found."
+    fi
+}
 
 
 PATCH_BT_LIB() {
