@@ -1877,7 +1877,7 @@ APPLY_STOCK_CONFIG() {
 
 	# Fix samsung device health manager service
     if [ "$USE_ALT_SDHMS_APP" = "TRUE" ]; then
-        if [ -n "$SDHMS_MAX_SUPPORTED_OS_SDK" ] && (( SDK > SDHMS_MAX_SUPPORTED_OS_SDK )); then
+        if [ -n "$SDHMS_MAX_SUPPORTED_OS_SDK" ] && [ "$(echo "$SDK > $SDHMS_MAX_SUPPORTED_OS_SDK" | bc -l)" -eq 1 ]; then
             UPDATE_SDHMS "$EXTRACTED_FIRM_DIR"
         fi
     fi
