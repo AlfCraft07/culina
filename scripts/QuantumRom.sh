@@ -376,7 +376,6 @@ PREPARE_PARTITIONS() {
 
     if [ -n "$STOCK_DEVICE" ] && [ -f "${DEVICES_DIR}/$STOCK_DEVICE/config" ]; then
         local STOCK_HAS_AB_SLOT="$(grep -m1 '^STOCK_HAS_AB_SLOT=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
-        local BUILD_PARTITIONS="vendor"
     fi
 
 	# Delete empty b slot images
