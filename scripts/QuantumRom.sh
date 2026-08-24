@@ -1220,6 +1220,60 @@ ADD_SYSTEM_EXT_IN_SYSTEM_ROOT() {
 }
 
 
+ADD_PRODUCT_IN_SYSTEM_ROOT() {
+    if [ "$#" -ne 1 ]; then
+        echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
+        return 1
+    fi
+
+    local EXTRACTED_FIRM_DIR="$1"
+
+    echo -e "- Copying product content into system root"
+    rm -rf "${EXTRACTED_FIRM_DIR}/system/product"
+    mv "${EXTRACTED_FIRM_DIR}/product" "${EXTRACTED_FIRM_DIR}/system"
+
+    echo -e "- Cleaning and merging product file contexts and configs"
+    # File paths
+    PRODUCT_CONFIG_FILE="${EXTRACTED_FIRM_DIR}/config/product_fs_config"
+    PRODUCT_CONTEXTS_FILE="${EXTRACTED_FIRM_DIR}/config/product_file_contexts"
+
+    SYSTEM_CONFIG_FILE="${EXTRACTED_FIRM_DIR}/config/system_fs_config"
+    SYSTEM_CONTEXTS_FILE="${EXTRACTED_FIRM_DIR}/config/system_file_contexts"
+
+    PRODUCT_TEMP_CONFIG="${PRODUCT_CONFIG_FILE}.tmp"
+    PRODUCT_TEMP_CONTEXTS="${PRODUCT_CONTEXTS_FILE}.tmp"
+
+    # Clean product contexts
+    grep -v '^/ u:object_r:system_file:s0$' "$PRODUCT_CONTEXTS_FILE" \
+    | grep -v '^/system_ext u:object_r:system_file:s0$' \
+    | grep -v '^/system_ext(.*)? u:object_r:system_file:s0$' \
+    | grep -v '^/system_ext/ u:object_r:system_file:s0$' \
+    > "$PRODUCT_TEMP_CONTEXTS" && mv "$PRODUCT_TEMP_CONTEXTS" "$PRODUCT_CONTEXTS_FILE"
+
+    # Clean product config
+    grep -v '^/ 0 0 0755$' "$PRODUCT_CONFIG_FILE" \
+    | grep -v '^system_ext/ 0 0 0755$' \
+    > "$PRODUCT_TEMP_CONFIG" && mv "$PRODUCT_TEMP_CONFIG" "$PRODUCT_CONFIG_FILE"
+
+    # Fix product config
+    awk '{print "system/" $0}' "$PRODUCT_CONFIG_FILE" \
+    > "$PRODUCT_TEMP_CONFIG" && mv "$PRODUCT_TEMP_CONFIG" "$PRODUCT_CONFIG_FILE"
+
+    # Fix product contexts
+    awk '{print "/system" $0}' "$PRODUCT_CONTEXTS_FILE" \
+    > "$PRODUCT_TEMP_CONTEXTS" && mv "$PRODUCT_TEMP_CONTEXTS" "$PRODUCT_CONTEXTS_FILE"
+
+    # Append cleaned product config into system config
+    cat "$PRODUCT_CONFIG_FILE" >> "$SYSTEM_CONFIG_FILE"
+
+    # Append cleaned product contexts into system contexts
+    cat "$PRODUCT_CONTEXTS_FILE" >> "$SYSTEM_CONTEXTS_FILE"
+
+    rm -rf "$EXTRACTED_FIRM_DIR"/config/product*
+    local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/system/product"
+}
+
+
 SEPARATE_SYSTEM_EXT() {
     if [ "$#" -ne 1 ]; then
         echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
@@ -1272,6 +1326,116 @@ SEPARATE_SYSTEM_EXT() {
     fi
 
     local TARGET_ROM_SYSTEM_EXT_DIR="${EXTRACTED_FIRM_DIR}/system_ext"
+}
+
+
+SEPARATE_PRODUCT() {
+    if [ "$#" -ne 1 ]; then
+        echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
+        return 1
+    fi
+
+    local EXTRACTED_FIRM_DIR="$1"
+
+	echo "- Separating product"
+    mv "${EXTRACTED_FIRM_DIR}/system/system/system_ext" "${EXTRACTED_FIRM_DIR}/"
+	ln -s /system_ext ${EXTRACTED_FIRM_DIR}/system/system/system_ext
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system_ext"
+	mkdir "${EXTRACTED_FIRM_DIR}/system/system_ext"
+
+    SYSTEM_FS_CONFIG="${EXTRACTED_FIRM_DIR}/config/system_fs_config"
+	SYSTEM_FILE_CONTEXTS="${EXTRACTED_FIRM_DIR}/config/system_file_contexts"
+    
+	PRODUCT_FS_CONFIG="${EXTRACTED_FIRM_DIR}/config/product_fs_config"
+	PRODUCT_FILE_CONTEXTS="${EXTRACTED_FIRM_DIR}/config/product_file_contexts"
+
+    # Process system_ext_file_contexts
+    if grep -q '^/system/system/product' "$SYSTEM_FILE_CONTEXTS"; then
+        grep '^/system/system/product' "$SYSTEM_FILE_CONTEXTS" > "$PRODUCT_FILE_CONTEXTS"
+        sed -i '\|^/system/system/product|d' "$SYSTEM_FILE_CONTEXTS"
+        awk '{sub(/^\/system\/system\/product/, "/product"); print}' "$PRODUCT_FILE_CONTEXTS" > "$PRODUCT_FILE_CONTEXTS.tmp"  && \
+        mv "$PRODUCT_FILE_CONTEXTS.tmp" "$PRODUCT_FILE_CONTEXTS"
+
+        # Add object context line if missing
+		grep -qxF '/system/product u:object_r:system_file:s0' "$SYSTEM_FILE_CONTEXTS" || echo '/system/product u:object_r:system_file:s0' >> "$SYSTEM_FILE_CONTEXTS"
+		grep -qxF '/system/system/product u:object_r:system_file:s0' "$PRODUCT_FILE_CONTEXTS" || echo '/system/system/product u:object_r:system_file:s0' >> "$PRODUCT_FILE_CONTEXTS"
+
+        grep -qxF '/ u:object_r:system_file:s0' "$PRODUCT_FILE_CONTEXTS" || echo '/ u:object_r:system_file:s0' >> "$PRODUCT_FILE_CONTEXTS"
+		sort -u "$PRODUCT_FILE_CONTEXTS" -o "$PRODUCT_FILE_CONTEXTS"
+    fi
+
+    # Process product_fs_config
+    if grep -q '^system/system/product' "$SYSTEM_FS_CONFIG"; then
+        grep '^system/system/product' "$SYSTEM_FS_CONFIG" > "$PRODUCT_FS_CONFIG"
+        sed -i '\|^system/system/product|d' "$SYSTEM_FS_CONFIG"
+        awk '{sub(/^system\/system\/product/, "product"); print}' "$PRODUCT_FS_CONFIG" > "$PRODUCT_FS_CONFIG.tmp" &&  \
+	    mv "$PRODUCT_FS_CONFIG.tmp" "$PRODUCT_FS_CONFIG"
+
+        # Add default fs permissions if missing
+        grep -qxF 'system/product 0 0 0755' "$SYSTEM_FS_CONFIG" || echo 'system/product 0 0 0755' >> "$SYSTEM_FS_CONFIG"
+		grep -qxF 'system/system/product 0 0 0644' "$SYSTEM_FS_CONFIG" || echo 'system/system/product 0 0 0644' >> "$SYSTEM_FS_CONFIG"
+
+        grep -qxF '/ 0 0 0755' "$SYSTEM_EXT_FS_CONFIG" || echo '/ 0 0 0755' >> "$PRODUCT_FS_CONFIG"
+        grep -qxF 'product/ 0 0 0755' "$PRODUCT_FS_CONFIG" || echo 'product/ 0 0 0755' >> "$PRODUCT_FS_CONFIG"
+		sort -u "$PRODUCT_FS_CONFIG" -o "$PRODUCT_FS_CONFIG"
+    fi
+
+    local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/product"
+}
+
+
+ADJUST_PRODUCT() {
+    if [ "$#" -ne 1 ]; then
+        echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
+        return 1
+    fi
+
+    local EXTRACTED_FIRM_DIR="$1"
+
+    if [ "$STOCK_HAS_SEPARATE_PRODUCT" = "FALSE" ]; then
+        echo "- STOCK_HAS_SEPARATE_PRODUCT: $STOCK_HAS_SEPARATE_PRODUCT"
+
+        if [ -d "${EXTRACTED_FIRM_DIR}/system/system/product/etc" ]; then
+            local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/system/system/product"
+
+        elif [ -d "${EXTRACTED_FIRM_DIR}/system/product/etc" ]; then
+            local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/system/product"
+			
+		elif [ -d "${EXTRACTED_FIRM_DIR}/product/etc" ]; then
+		    ADD_PRODUCT_IN_SYSTEM_ROOT "$EXTRACTED_FIRM_DIR"
+        fi
+
+	elif [ "$STOCK_HAS_SEPARATE_PRODUCT" = "TRUE" ]; then
+        echo "STOCK_HAS_SEPARATE_PRODUCT: $STOCK_HAS_SEPARATE_PRODUCT"
+
+        if [ -d "${EXTRACTED_FIRM_DIR}/system/system/product/etc" ]; then
+            SEPARATE_PRODUCT "$EXTRACTED_FIRM_DIR"
+        fi
+    fi
+
+    echo "- TARGET_ROM_PRODUCT_DIR set to: $TARGET_ROM_PRODUCT_DIR"
+}
+
+
+GET_PRODUCT_DIR() {
+    if [ "$#" -ne 1 ]; then
+        echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
+        return 1
+    fi
+
+    local EXTRACTED_FIRM_DIR="$1"
+
+    if [ -d "${EXTRACTED_FIRM_DIR}/product/etc" ]; then
+        local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/product"
+    elif [ -d "${EXTRACTED_FIRM_DIR}/system/product/etc" ]; then
+        local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/system/product"
+    elif [ -d "${EXTRACTED_FIRM_DIR}/system/system/product/etc" ]; then
+        local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/system/system/product"
+    else
+        return 1
+    fi
+
+    echo "$TARGET_ROM_PRODUCT_DIR"
 }
 
 
