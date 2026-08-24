@@ -1,4 +1,4 @@
-name: QuantumROM Tools (General)
+name: QuantumROM Tools (Vendor)
 
 on:
   workflow_dispatch:
@@ -33,7 +33,7 @@ on:
 
 jobs:
   build:
-    name: Start QuantumROM Tools Sixteen.
+    name: Start QuantumROM Tools Vendor
     runs-on: ubuntu-24.04
 
     steps:
