@@ -72,7 +72,7 @@ append_context() {
 
 find_context() {
     local full="$1"
-    local ctx="u:object_r:system_file:s0"
+    local ctx="u:object_r:vendor_file:s0"
 
     if [ -f "$FC_SOURCE" ]; then
 
@@ -125,7 +125,7 @@ GENERATE_FILE_CONTEXTS() {
 
     > "$FILE_CONTEXTS"
 
-    ROOT_CONTEXT="u:object_r:system_file:s0"
+    ROOT_CONTEXT="u:object_r:vendor_file:s0"
 
     if [ -f "$FC_SOURCE" ]; then
         ROOT_CONTEXT=$(find_context "/${IMG_NAME_BASE}")
@@ -142,7 +142,7 @@ GENERATE_FILE_CONTEXTS() {
             --only-values "$f" 2>/dev/null | tr -d '\0')
 
         [ -z "$ctx" ] && \
-            ctx="u:object_r:system_file:s0"
+            ctx="u:object_r:vendor_file:s0"
 
         if [[ "$rel" == *"lost+found"* ]]; then
             ctx="u:object_r:rootfs:s0"
