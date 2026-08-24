@@ -1451,6 +1451,8 @@ APPLY_STOCK_CONFIG() {
 
 	rm -rf "${EXTRACTED_FIRM_DIR}/vendor/firmware"
     rm -rf "${EXTRACTED_FIRM_DIR}/vendor/etc"/fstab.*
+    rm -rf "${EXTRACTED_FIRM_DIR}/vendor/etc"/media_codecs*.*
+    rm -rf "${EXTRACTED_FIRM_DIR}/vendor/etc"/media_profiles*.*
 
 	cp -a "${DEVICES_DIR}/$STOCK_DEVICE/Stock/." "${EXTRACTED_FIRM_DIR}/"
 
