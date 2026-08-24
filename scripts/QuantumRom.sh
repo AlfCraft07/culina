@@ -1245,14 +1245,14 @@ ADD_PRODUCT_IN_SYSTEM_ROOT() {
 
     # Clean product contexts
     grep -v '^/ u:object_r:system_file:s0$' "$PRODUCT_CONTEXTS_FILE" \
-    | grep -v '^/system_ext u:object_r:system_file:s0$' \
-    | grep -v '^/system_ext(.*)? u:object_r:system_file:s0$' \
-    | grep -v '^/system_ext/ u:object_r:system_file:s0$' \
+    | grep -v '^/product u:object_r:system_file:s0$' \
+    | grep -v '^/product(.*)? u:object_r:system_file:s0$' \
+    | grep -v '^/product/ u:object_r:system_file:s0$' \
     > "$PRODUCT_TEMP_CONTEXTS" && mv "$PRODUCT_TEMP_CONTEXTS" "$PRODUCT_CONTEXTS_FILE"
 
     # Clean product config
     grep -v '^/ 0 0 0755$' "$PRODUCT_CONFIG_FILE" \
-    | grep -v '^system_ext/ 0 0 0755$' \
+    | grep -v '^product/ 0 0 0755$' \
     > "$PRODUCT_TEMP_CONFIG" && mv "$PRODUCT_TEMP_CONFIG" "$PRODUCT_CONFIG_FILE"
 
     # Fix product config
@@ -1338,10 +1338,10 @@ SEPARATE_PRODUCT() {
     local EXTRACTED_FIRM_DIR="$1"
 
 	echo "- Separating product"
-    mv "${EXTRACTED_FIRM_DIR}/system/system/system_ext" "${EXTRACTED_FIRM_DIR}/"
-	ln -s /system_ext ${EXTRACTED_FIRM_DIR}/system/system/system_ext
-	rm -rf "${EXTRACTED_FIRM_DIR}/system/system_ext"
-	mkdir "${EXTRACTED_FIRM_DIR}/system/system_ext"
+    mv "${EXTRACTED_FIRM_DIR}/system/system/product" "${EXTRACTED_FIRM_DIR}/"
+	ln -s /product ${EXTRACTED_FIRM_DIR}/system/system/product
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/product"
+	mkdir "${EXTRACTED_FIRM_DIR}/system/product"
 
     SYSTEM_FS_CONFIG="${EXTRACTED_FIRM_DIR}/config/system_fs_config"
 	SYSTEM_FILE_CONTEXTS="${EXTRACTED_FIRM_DIR}/config/system_file_contexts"
@@ -1349,7 +1349,7 @@ SEPARATE_PRODUCT() {
 	PRODUCT_FS_CONFIG="${EXTRACTED_FIRM_DIR}/config/product_fs_config"
 	PRODUCT_FILE_CONTEXTS="${EXTRACTED_FIRM_DIR}/config/product_file_contexts"
 
-    # Process system_ext_file_contexts
+    # Process product_file_contexts
     if grep -q '^/system/system/product' "$SYSTEM_FILE_CONTEXTS"; then
         grep '^/system/system/product' "$SYSTEM_FILE_CONTEXTS" > "$PRODUCT_FILE_CONTEXTS"
         sed -i '\|^/system/system/product|d' "$SYSTEM_FILE_CONTEXTS"
@@ -1375,7 +1375,7 @@ SEPARATE_PRODUCT() {
         grep -qxF 'system/product 0 0 0755' "$SYSTEM_FS_CONFIG" || echo 'system/product 0 0 0755' >> "$SYSTEM_FS_CONFIG"
 		grep -qxF 'system/system/product 0 0 0644' "$SYSTEM_FS_CONFIG" || echo 'system/system/product 0 0 0644' >> "$SYSTEM_FS_CONFIG"
 
-        grep -qxF '/ 0 0 0755' "$SYSTEM_EXT_FS_CONFIG" || echo '/ 0 0 0755' >> "$PRODUCT_FS_CONFIG"
+        grep -qxF '/ 0 0 0755' "$PRODUCT_FS_CONFIG" || echo '/ 0 0 0755' >> "$PRODUCT_FS_CONFIG"
         grep -qxF 'product/ 0 0 0755' "$PRODUCT_FS_CONFIG" || echo 'product/ 0 0 0755' >> "$PRODUCT_FS_CONFIG"
 		sort -u "$PRODUCT_FS_CONFIG" -o "$PRODUCT_FS_CONFIG"
     fi
