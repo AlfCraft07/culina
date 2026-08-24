@@ -1450,6 +1450,7 @@ APPLY_STOCK_CONFIG() {
 	fi
 
 	rm -rf "${EXTRACTED_FIRM_DIR}/vendor/firmware"
+    rm -rf "${EXTRACTED_FIRM_DIR}/vendor/etc"/fstab.*
 
 	cp -a "${DEVICES_DIR}/$STOCK_DEVICE/Stock/." "${EXTRACTED_FIRM_DIR}/"
 
