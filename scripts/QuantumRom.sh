@@ -1347,10 +1347,10 @@ APPLY_STOCK_CONFIG() {
 
     local EXTRACTED_FIRM_DIR="$1"
 
-	local SDK="$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.build.version.sdk_full")"
+	local SDK="$(GET_PROP "$EXTRACTED_FIRM_DIR" "vendor" "ro.build.version.sdk_full")"
 
 	if [[ -z "$SDK" ]]; then
-        local SDK="$(GET_PROP "$EXTRACTED_FIRM_DIR" "system" ro.build.version.sdk)"
+        local SDK="$(GET_PROP "$EXTRACTED_FIRM_DIR" "vendor" ro.build.version.sdk)"
     fi
 
 	if [ -f "${EXTRACTED_FIRM_DIR}/system/system/etc/floating_feature.xml" ]; then
@@ -1381,7 +1381,7 @@ APPLY_STOCK_CONFIG() {
         return 1
 	fi
 
-    if [ ! -d "${EXTRACTED_FIRM_DIR}/system/system" ]; then
+    if [ ! -d "${EXTRACTED_FIRM_DIR}/vendor" ]; then
         echo -e "No usable extracted firmware found"
         return 1
 	fi
@@ -1449,10 +1449,7 @@ APPLY_STOCK_CONFIG() {
 	    rm -rf "${EXTRACTED_FIRM_DIR}/system/system/cameradata/portrait_data"
 	fi
 
-	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/init"/rscmgr*.rc
-	find "${EXTRACTED_FIRM_DIR}/system/system/media" -maxdepth 1 -type f \( -iname "*.spi" -o -iname "*.qmg" -o -iname "*.txt" \) -delete
-	rm -rf "$EXTRACTED_FIRM_DIR"/product/overlay/framework-res*auto_generated_rro_product.apk
-	rm -rf ${EXTRACTED_FIRM_DIR}/product/overlay/SystemUI*auto_generated_rro_product.apk
+	rm -rf "${EXTRACTED_FIRM_DIR}/vendor/firmware"
 
 	cp -a "${DEVICES_DIR}/$STOCK_DEVICE/Stock/." "${EXTRACTED_FIRM_DIR}/"
 
