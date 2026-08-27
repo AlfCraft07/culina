@@ -911,52 +911,50 @@ PATCH_FLAG_SECURE() {
 PATCH_MID_BOOT_FLIP() {
     echo " "
 
-    if [ "$#" -ne 1 ]; then
+	if [ "$#" -ne 1 ]; then
         echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
         return 1
     fi
 
-    echo -e "Patching mid-boot flip to landscape..."
+    echo -e "Patching mid-boot flip to landscape."
+    # Issue: Hardcoded displayDeviceRotation = 1 (ROTATION_90) when isDefaultDisplay = true
 
-    # Locate DisplayRotation.smali across smali folders
-    local FILE=$(find "${1}" -path "*/com/android/server/wm/DisplayRotation.smali" | head -n 1)
-    if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
-        local FILE="${1}/smali/com/android/server/wm/DisplayRotation.smali"
-    fi
+    local FILE="${1}/smali/com/android/server/wm/DisplayRotation.smali"
+    # patch <init>
+    local METHOD_NAME=".method public constructor <init>("
+    local REPLACE_BODY='
+    goto :cond_0
 
-    if [ ! -f "$FILE" ]; then
-        echo -e "Error: Could not find DisplayRotation.smali in ${1}"
-        return 1
-    fi
+    :goto_0
+    move p1, v3
 
-    # Replace 'if-eqz p4, :cond_0' with 'goto :cond_0' in <init>
-    sed -i 's/if-eqz p4, :cond_0/goto :cond_0/g' "$FILE"
+    goto/16 :goto_2
+    '
+	REPLACE_SMALI_METHOD "$FILE" "$METHOD_NAME" "$REPLACE_BODY"
 }
 
 
 PATCH_DEXOPT_DIALOG_FLIP() {
     echo " "
 
-    if [ "$#" -ne 1 ]; then
+	if [ "$#" -ne 1 ]; then
         echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
         return 1
     fi
 
-    echo -e "Patching Dexopt dialog flip..."
+    echo -e "Patching Optimizing Apps (Dexopt) dialog flip."
+    # Issue: Hardcoded screenOrientation = 0 (SCREEN_ORIENTATION_LANDSCAPE) for BootProgressDialog
 
-    # Locate PhoneWindowManagerExt$$ExternalSyntheticLambda11.smali across smali folders
-    local FILE=$(find "${1}" -name 'PhoneWindowManagerExt$$ExternalSyntheticLambda11.smali' | head -n 1)
-    if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
-        local FILE="${1}/smali/com/android/server/policy/PhoneWindowManagerExt\$\$ExternalSyntheticLambda11.smali"
-    fi
+    local FILE="${1}/smali/com/android/server/policy/PhoneWindowManagerExt\$\$ExternalSyntheticLambda11.smali"
+    # patch run()
+    local METHOD_NAME=".method public final run()V"
+    local REPLACE_BODY='
+    :cond_2
+    const/4 v5, 0x1
 
-    if [ ! -f "$FILE" ]; then
-        echo -e "Error: Could not find PhoneWindowManagerExt\$\$ExternalSyntheticLambda11.smali in ${1}"
-        return 1
-    fi
-
-    # Replace 'iput v2, v9, ...' with const/4 v5, 0x1 followed by 'iput v5, v9, ...'
-    sed -i 's/iput v2, v9, Landroid\/view\/WindowManager\$LayoutParams;->screenOrientation:I/const\/4 v5, 0x1\n    iput v5, v9, Landroid\/view\/WindowManager\$LayoutParams;->screenOrientation:I/g' "$FILE"
+    iput v5, v9, Landroid/view/WindowManager$LayoutParams;->screenOrientation:I
+    '
+	REPLACE_SMALI_METHOD "$FILE" "$METHOD_NAME" "$REPLACE_BODY"
 }
 
 
