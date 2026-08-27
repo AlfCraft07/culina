@@ -596,82 +596,82 @@ INSTALL_FRAMEWORK() {
 }
 
 
-# DECOMPILE() {
-#     echo " "
+DECOMPILE() {
+    echo " "
 
-#     if [ "$#" -ne 4 ]; then
-#         echo -e "Usage: DECOMPILE <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <FILE> <DECOMPILE_DIR>"
-#         return 1
-#     fi
+    if [ "$#" -ne 4 ]; then
+        echo -e "Usage: DECOMPILE <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <FILE> <DECOMPILE_DIR>"
+        return 1
+    fi
 
-#     # apktool version-3
-# 	# d = decompile
-# 	# --force = force delete target decompile directory before decompile
-# 	# --no-src = don't decompile dex file
-# 	# --no-res = don't decode resources
-# 	# --match-original = decompile everything as original
-# 	# --frame-path = framework path
-# 	# -o = decompile directory
-# 	local APKTOOL="$1"
-# 	local FRAMEWORK_DIR="$2"
-#     local FILE="$3"
-#     local DECOMPILE_DIR="$4"
-#     local BASENAME="$(basename "${FILE%.*}")"
-#     local OUT="$DECOMPILE_DIR/$BASENAME"
+    # apktool version-3
+	# d = decompile
+	# --force = force delete target decompile directory before decompile
+	# --no-src = don't decompile dex file
+	# --no-res = don't decode resources
+	# --match-original = decompile everything as original
+	# --frame-path = framework path
+	# -o = decompile directory
+	local APKTOOL="$1"
+	local FRAMEWORK_DIR="$2"
+    local FILE="$3"
+    local DECOMPILE_DIR="$4"
+    local BASENAME="$(basename "${FILE%.*}")"
+    local OUT="$DECOMPILE_DIR/$BASENAME"
 
-#     echo -e "Decompiling: $FILE"
+    echo -e "Decompiling: $FILE"
 
-# 	if [ ! -f "$FILE" ]; then
-#         echo -e "- File not found: $FILE"
-#         return 1
-#     fi
+	if [ ! -f "$FILE" ]; then
+        echo -e "- File not found: $FILE"
+        return 1
+    fi
 
-# 	rm -rf "$OUT"
-#     java -jar "$APKTOOL" d --force --frame-path "$FRAMEWORK_DIR" --match-original "$FILE" -o "$OUT"
-# }
+	rm -rf "$OUT"
+    java -jar "$APKTOOL" d --force --frame-path "$FRAMEWORK_DIR" --match-original "$FILE" -o "$OUT"
+}
 
 
-# RECOMPILE() {
-#     echo " "
+RECOMPILE() {
+    echo " "
 
-# 	if [ "$#" -ne 4 ]; then
-#         echo -e "Usage: ${FUNCNAME[0]} <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <DECOMPILED_DIR> <RECOMPILE_DIR>"
-#         return 1
-#     fi
+	if [ "$#" -ne 4 ]; then
+        echo -e "Usage: ${FUNCNAME[0]} <APKTOOL_JAR_DIR> <FRAMEWORK_DIR> <DECOMPILED_DIR> <RECOMPILE_DIR>"
+        return 1
+    fi
 
-#     # apktool version-3
-# 	# b = recompile
-# 	# --copy-original = use original manifest
-# 	# --frame-path = framework path
-# 	# -o = output /recompile file directory with filename
-# 	local APKTOOL="$1"
-# 	local FRAMEWORK_DIR="$2"
-# 	local DECOMPILED_DIR="$3"
-#     local RECOMPILE_DIR="$4"
+    # apktool version-3
+	# b = recompile
+	# --copy-original = use original manifest
+	# --frame-path = framework path
+	# -o = output /recompile file directory with filename
+	local APKTOOL="$1"
+	local FRAMEWORK_DIR="$2"
+	local DECOMPILED_DIR="$3"
+    local RECOMPILE_DIR="$4"
 	
-# 	echo -e "Recompiling: $DECOMPILED_DIR"
+	echo -e "Recompiling: $DECOMPILED_DIR"
 
-# 	if [ ! -d "$DECOMPILED_DIR" ]; then
-#         echo "- Directory not found: $DECOMPILED_DIR"
-#         return 1
-#     fi
+	if [ ! -d "$DECOMPILED_DIR" ]; then
+        echo "- Directory not found: $DECOMPILED_DIR"
+        return 1
+    fi
 
-#     local org_file_name=$(awk '/^apkFileName:/ {print $2}' "$DECOMPILED_DIR/apktool.yml")
-#     local name="${org_file_name%.*}"
-#     local ext="${org_file_name##*.}"
-#     local built_file="$RECOMPILE_DIR/${name}.$ext"
+    local org_file_name=$(awk '/^apkFileName:/ {print $2}' "$DECOMPILED_DIR/apktool.yml")
+    local name="${org_file_name%.*}"
+    local ext="${org_file_name##*.}"
+    local built_file="$RECOMPILE_DIR/${name}.$ext"
 
-#     java -jar "$APKTOOL" b "$DECOMPILED_DIR" --copy-original --frame-path "$FRAMEWORK_DIR" -o "$built_file"
-#     rm -rf "$DECOMPILED_DIR"
+    java -jar "$APKTOOL" b "$DECOMPILED_DIR" --copy-original --frame-path "$FRAMEWORK_DIR" -o "$built_file"
+    rm -rf "$DECOMPILED_DIR"
 
-# 	# Zipalign
-# 	# echo " "
-# 	# if [[ "$ext" == "apk" ]]; then
-# 	    # echo -e "Zipaligning: $built_file to $final_file"
-#         # zipalign -v 4 "$built_file" "$final_file" >/dev/null 2>&1
-# 		# rm -rf "$built_file"
-#     # fi
-# }
+	# Zipalign
+	# echo " "
+	# if [[ "$ext" == "apk" ]]; then
+	    # echo -e "Zipaligning: $built_file to $final_file"
+        # zipalign -v 4 "$built_file" "$final_file" >/dev/null 2>&1
+		# rm -rf "$built_file"
+    # fi
+}
 
 
 REPLACE_SMALI_METHOD() {
@@ -907,6 +907,57 @@ PATCH_FLAG_SECURE() {
 #     '
 # 	REPLACE_SMALI_METHOD "$FILE" "$METHOD_NAME" "$REPLACE_BODY"
 # }
+
+PATCH_MID_BOOT_FLIP() {
+    echo " "
+
+    if [ "$#" -ne 1 ]; then
+        echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
+        return 1
+    fi
+
+    echo -e "Patching mid-boot flip to landscape..."
+
+    # Locate DisplayRotation.smali across smali folders
+    local FILE=$(find "${1}" -path "*/com/android/server/wm/DisplayRotation.smali" | head -n 1)
+    if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
+        local FILE="${1}/smali/com/android/server/wm/DisplayRotation.smali"
+    fi
+
+    if [ ! -f "$FILE" ]; then
+        echo -e "Error: Could not find DisplayRotation.smali in ${1}"
+        return 1
+    fi
+
+    # Replace 'if-eqz p4, :cond_0' with 'goto :cond_0' in <init>
+    sed -i 's/if-eqz p4, :cond_0/goto :cond_0/g' "$FILE"
+}
+
+
+PATCH_DEXOPT_DIALOG_FLIP() {
+    echo " "
+
+    if [ "$#" -ne 1 ]; then
+        echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_SERVICES_DIRECTORY>"
+        return 1
+    fi
+
+    echo -e "Patching Dexopt dialog flip..."
+
+    # Locate PhoneWindowManagerExt$$ExternalSyntheticLambda11.smali across smali folders
+    local FILE=$(find "${1}" -name 'PhoneWindowManagerExt$$ExternalSyntheticLambda11.smali' | head -n 1)
+    if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
+        local FILE="${1}/smali/com/android/server/policy/PhoneWindowManagerExt\$\$ExternalSyntheticLambda11.smali"
+    fi
+
+    if [ ! -f "$FILE" ]; then
+        echo -e "Error: Could not find PhoneWindowManagerExt\$\$ExternalSyntheticLambda11.smali in ${1}"
+        return 1
+    fi
+
+    # Replace 'iput v2, v9, ...' with const/4 v5, 0x1 followed by 'iput v5, v9, ...'
+    sed -i 's/iput v2, v9, Landroid\/view\/WindowManager\$LayoutParams;->screenOrientation:I/const\/4 v5, 0x1\n    iput v5, v9, Landroid\/view\/WindowManager\$LayoutParams;->screenOrientation:I/g' "$FILE"
+}
 
 
 DISABLE_SIGNATURE_VERIFICATION() {
