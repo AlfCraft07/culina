@@ -919,7 +919,7 @@ PATCH_MID_BOOT_FLIP() {
     echo -e "Patching mid-boot flip to landscape."
     # Issue: Hardcoded displayDeviceRotation = 1 (ROTATION_90) when isDefaultDisplay = true
 
-    local FILE="${1}/smali/com/android/server/wm/DisplayRotation.smali"
+    local FILE="${1}/smali_classes2/com/android/server/wm/DisplayRotation.smali"
     # patch <init>
     local METHOD_NAME=".method public constructor <init>("
     local REPLACE_BODY='
@@ -945,7 +945,7 @@ PATCH_DEXOPT_DIALOG_FLIP() {
     echo -e "Patching Optimizing Apps (Dexopt) dialog flip."
     # Issue: Hardcoded screenOrientation = 0 (SCREEN_ORIENTATION_LANDSCAPE) for BootProgressDialog
 
-    local FILE="${1}/smali/com/android/server/policy/PhoneWindowManagerExt\$\$ExternalSyntheticLambda11.smali"
+    local FILE="${1}/smali_classes2/com/android/server/policy/PhoneWindowManagerExt\$\$ExternalSyntheticLambda11.smali"
     # patch run()
     local METHOD_NAME=".method public final run()V"
     local REPLACE_BODY='
