@@ -1263,7 +1263,7 @@ FIX_VNDK() {
     mkdir -p "$VNDK_DIR"
 
     if curl -fsSL \
-        "https://api.github.com/repos/AlfCraft07/releases/tags/VNDKS" |
+        "https://api.github.com/repos/AlfCraft07/culina/releases/tags/VNDKS" |
         jq -e --arg dev "$VNDK_ZIP" '.assets[].name == $dev' |
         grep -q true; then
         echo "- $VNDK_ZIP found"
