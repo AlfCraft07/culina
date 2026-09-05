@@ -1255,7 +1255,7 @@ FIX_VNDK() {
     rm -rf "${TARGET_ROM_SYSTEM_EXT_DIR}/apex/"com.android.vndk.v*.apex
 
     local VNDK_ZIP="Android-${ANDROID_VERSION}_SDK-${SDK}.zip"
-    local VNDK_URL="https://github.com/AlfCraft07/culina/tree/ROManitas-update/QuantumROM/vndks/${VNDK_ZIP}"
+    local VNDK_URL="https://github.com/AlfCraft07/culina/releases/download/VNDKS/${VNDK_ZIP}"
     local VNDK_DIR="$(pwd)/QuantumROM/vndks"
     local VNDK_ZIP_PATH="${VNDK_DIR}/${VNDK_ZIP}"
     local VNDK_EXTRACT_DIR="${VNDK_DIR}/Android-${ANDROID_VERSION}_SDK-${SDK}"
@@ -1263,7 +1263,7 @@ FIX_VNDK() {
     mkdir -p "$VNDK_DIR"
 
     if curl -fsSL \
-        "https://api.github.com/AlfCraft07/culina/tree/ROManitas-update/QuantumROM/vndks" |
+        "https://api.github.com/repos/AlfCraft07/releases/tags/VNDKS" |
         jq -e --arg dev "$VNDK_ZIP" '.assets[].name == $dev' |
         grep -q true; then
         echo "- $VNDK_ZIP found"
