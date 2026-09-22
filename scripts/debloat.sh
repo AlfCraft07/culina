@@ -95,7 +95,6 @@ MISC_SERVICES=(
 "EarphoneTypeC" "EasySetup"
 "HashTagService" "LedCoverService"
 "LinkToWindowsService" "MemorySaver_O_Refresh"
-"MultiControl" "MultiControlVP6"
 "OMCAgent5" "OneStoreService" "FactoryAirCommandManager"
 "SOAgent7" "SOAgent75" "SOAgent76"
 "SolarAudio-service" "SPPPushClient"
