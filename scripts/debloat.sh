@@ -43,6 +43,7 @@ SAMSUNG_APPS=(
 "AvatarEmojiSticker_S" "AvatarPicker"
 "GalleryWidget" "LiveStickers" "StoryService"
 "StickerFaceARAvatar" "sticker" "PaymentFramework"
+"HWResourceShare" "StorageShare"
 )
 
 
