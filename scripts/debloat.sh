@@ -14,6 +14,7 @@ DEBLOAT_APPS=(
 "UnifiedWFC" "UniversalMDMClient" "VoiceAccess" "VTCameraSetting"
 "WebManual" "WifiGuider" "AutomationTest_FB" "FactoryTestProvider"
 "CIDManager" "FacAtFunction" "serviceModeApp_FB"
+"com.qualcomm.location" "QCC"
 )
 
 
@@ -43,7 +44,7 @@ SAMSUNG_APPS=(
 "AvatarEmojiSticker_S" "AvatarPicker"
 "GalleryWidget" "LiveStickers" "StoryService"
 "StickerFaceARAvatar" "sticker" "PaymentFramework"
-"HWResourceShare" "StorageShare"
+"HWResourceShare" "StorageShare" "MultiControl"
 )
 
 
