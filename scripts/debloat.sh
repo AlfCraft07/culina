@@ -3,12 +3,12 @@
 
 # GENERAL / SYSTEM / BLOAT
 DEBLOAT_APPS=(
-"HMT" "FactoryCameraFB" "WlanTest" "AirGlance" "AirReadingGlass" 
+"FactoryCameraFB" "WlanTest" "AirGlance" "AirReadingGlass" 
 "AndroidGlassesCore" "SOAgent77" "ARCore" "ARDrawing" "ARZone"
 "SingleTakeService" "BlockchainBasicKit" "Cameralyzer" 
 "DictDiotekForSec" "EasymodeContactsWidget81"
 "Fast" "FunModeSDK" "GearManagerStub" "KidsHome_Installer"
-"LinkSharing_v11" "LiveDrawing" "MAPSAgent" "MdecService"
+"LinkSharing_v11" "MAPSAgent" "com.qualcomm.location" "QCC"
 "MinusOnePage" "MoccaMobile" "Netflix_stub" "Notes40"
 "ParentalCare" "PhotoTable" "SmartReminder" "SmartSwitchStub"
 "UnifiedWFC" "UniversalMDMClient" "VoiceAccess" "VTCameraSetting"
@@ -38,11 +38,12 @@ SAMSUNG_APPS=(
 "OneDrive_Samsung_v3" "SamsungCarKeyFw"
 "SamsungPass" "SamsungSmartSuggestions"
 "SamsungPassAutofill_v1" "WarrantyCare"
-"AirCommand" "AppUpdateCenter" "AREmoji"
+"AppUpdateCenter" "AREmoji"
 "AREmojiEditor" "AutoDoodle" "AvatarEmojiSticker"
 "AvatarEmojiSticker_S" "AvatarPicker"
 "GalleryWidget" "LiveStickers" "StoryService"
 "StickerFaceARAvatar" "sticker" "PaymentFramework"
+"HWResourceShare" "StorageShare"
 )
 
 
@@ -92,7 +93,7 @@ HARDWARE_DRIVERS=(
 # MISC / SERVICES
 MISC_SERVICES=(
 "AuthFramework" "Discover" "DiscoverSEP"
-"EarphoneTypeC" "EasySetup" "FotaAgent"
+"EarphoneTypeC" "EasySetup"
 "HashTagService" "LedCoverService"
 "LinkToWindowsService" "MemorySaver_O_Refresh"
 "MultiControl" "MultiControlVP6"
@@ -255,6 +256,7 @@ DEBLOAT() {
     KICK "$EXTRACTED_FIRM_DIR" "${CARRIER_APPS[@]}"
     KICK "$EXTRACTED_FIRM_DIR" "${SAMSUNG_APPS[@]}"
     KICK "$EXTRACTED_FIRM_DIR" "${SAMSUNG_AI[@]}"
+    KICK "$EXTRACTED_FIRM_DIR" "${SAMSUNG_BIXBY_APPS[@]}"
     KICK "$EXTRACTED_FIRM_DIR" "${GOOGLE_APPS[@]}"
     KICK "$EXTRACTED_FIRM_DIR" "${FACEBOOK_APPS[@]}"
     KICK "$EXTRACTED_FIRM_DIR" "${HARDWARE_DRIVERS[@]}"
