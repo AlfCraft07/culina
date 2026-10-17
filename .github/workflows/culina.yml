@@ -1,4 +1,4 @@
-name: QuantumROM Tools
+name: Culina ROManitatis
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
       STOCK_DEVICE:
         description: "Your own device model or None"
         required: true
-        default: "SM-A225F"
+        default: "SM-P613"
 
       USE_UI_8_TETHERING_APEX:
         description: "Set True if your kernel BPF version is 5.4 (lower than 5.10)."
@@ -16,12 +16,12 @@ on:
       TARGET_DEVICE:
         description: "TARGET_DEVICE_MODEL."
         required: true
-        default: "SM-A346E"
+        default: "SM-X710"
 
       TARGET_DEVICE_CSC_OR_DOWNLOAD_LINK:
         description: "Input target device CSC code or direct download link."
         required: true
-        default: "BKD"
+        default: "EUX"
 
       TARGET_FW_VERSION:
         description: "Specific Samsung firmware version (PDA/CSC/MODEM) OR (AP/CSC/CP)"
@@ -45,17 +45,17 @@ on:
       DEBLOAT_SAMSUNG_DEX:
         description: "Debloat Samsung Dex apps (True/False)"
         required: true
-        default: "True"
+        default: "False"
 
       ADD_CHINA_SMART_MANAGER:
         description: "Add china smart manager (True/False)"
         required: true
-        default: "True"
+        default: "False"
 
       ADD_SAMSUNG_FLAGSHIP_APPS:
         description: "Add samsung flagship apps (True/False)"
         required: true
-        default: "True"
+        default: "False"
 
       ADD_CUSTOM_FEATURES:
         description: "Add samsung custom features (True/False)"
@@ -78,14 +78,14 @@ on:
         default: "True"
 
       COMPRESS_IMG:
-        description: "Compress img to xz or br (bortli)"
+        description: "Compress img to xz or br (brotli)"
         required: false
         default: ""
 
 
 jobs:
   build:
-    name: Start QuantumROM Tools
+    name: ROManitatem aedifica
     runs-on: ubuntu-22.04
 
     steps:
@@ -125,7 +125,7 @@ jobs:
 
       - name: Validate STOCK_DEVICE - ${{ inputs.STOCK_DEVICE }}
         run: |
-          REPO="SN-Abdullah-Al-Noman/QuantumROM"
+          REPO="AlfCraft07/culina"
           BRANCH="Devices"
 
           source "$(pwd)/scripts/git_utils.sh"
@@ -139,7 +139,7 @@ jobs:
               fi
 
               echo "✅ Device supported: $STOCK_DEVICE"
-              GIT_SPARSE_DOWNLOAD "SN-Abdullah-Al-Noman/QuantumROM" "Devices" "$STOCK_DEVICE" \
+              GIT_SPARSE_DOWNLOAD "AlfCraft07/culina" "Devices" "$STOCK_DEVICE" \
                   "$(pwd)/QuantumROM/Devices/$STOCK_DEVICE"
           else
               echo "ℹ️ STOCK_DEVICE is set to None."
