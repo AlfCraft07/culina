@@ -43,7 +43,7 @@ on:
         default: "True"
 
       DEBLOAT_SAMSUNG_DEX:
-        description: "Debloat Samsung Dex apps (True/False)"
+        description: "Debloat Samsung DeX apps (True/False)"
         required: true
         default: "False"
 
@@ -91,9 +91,6 @@ jobs:
     steps:
       - name: Checkout repository.
         uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 1
 
       - name: Set variables
         run: |
