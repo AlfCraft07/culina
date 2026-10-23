@@ -26,7 +26,7 @@ source "$(pwd)/scripts/debloat.sh"
 source "$(pwd)/scripts/git_utils.sh"
 source "$(pwd)/scripts/QuantumRom.sh"
 
-REPO="SN-Abdullah-Al-Noman/QuantumROM"
+REPO="AlfCraft07/culina"
 BRANCH="Devices"
 
 if [ "$STOCK_DEVICE" != "None" ]; then
