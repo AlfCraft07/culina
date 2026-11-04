@@ -1508,6 +1508,170 @@ GET_SYSTEM_EXT_DIR() {
 }
 
 
+ADD_PRODUCT_IN_SYSTEM_ROOT() {
+    if [ "$#" -ne 1 ]; then
+        echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
+        return 1
+    fi
+
+    local EXTRACTED_FIRM_DIR="$1"
+
+    echo -e "- Copying product content into system root"
+    rm -rf "${EXTRACTED_FIRM_DIR}/system/product"
+    mv "${EXTRACTED_FIRM_DIR}/product" "${EXTRACTED_FIRM_DIR}/system"
+
+    echo -e "- Cleaning and merging product file contexts and configs"
+    # File paths
+    PRODUCT_CONFIG_FILE="${EXTRACTED_FIRM_DIR}/config/product_fs_config"
+    PRODUCT_CONTEXTS_FILE="${EXTRACTED_FIRM_DIR}/config/product_file_contexts"
+
+    SYSTEM_CONFIG_FILE="${EXTRACTED_FIRM_DIR}/config/system_fs_config"
+    SYSTEM_CONTEXTS_FILE="${EXTRACTED_FIRM_DIR}/config/system_file_contexts"
+
+    PRODUCT_TEMP_CONFIG="${PRODUCT_CONFIG_FILE}.tmp"
+    PRODUCT_TEMP_CONTEXTS="${PRODUCT_CONTEXTS_FILE}.tmp"
+
+    # Clean product contexts
+    grep -v '^/ u:object_r:system_file:s0$' "$PRODUCT_CONTEXTS_FILE" \
+    | grep -v '^/product u:object_r:system_file:s0$' \
+    | grep -v '^/product(.*)? u:object_r:system_file:s0$' \
+    | grep -v '^/product/ u:object_r:system_file:s0$' \
+    > "$PRODUCT_TEMP_CONTEXTS" && mv "$PRODUCT_TEMP_CONTEXTS" "$PRODUCT_CONTEXTS_FILE"
+
+    # Clean product config
+    grep -v '^/ 0 0 0755$' "$PRODUCT_CONFIG_FILE" \
+    | grep -v '^product/ 0 0 0755$' \
+    > "$PRODUCT_TEMP_CONFIG" && mv "$PRODUCT_TEMP_CONFIG" "$PRODUCT_CONFIG_FILE"
+
+    # Fix product config
+    awk '{print "system/" $0}' "$PRODUCT_CONFIG_FILE" \
+    > "$PRODUCT_TEMP_CONFIG" && mv "$PRODUCT_TEMP_CONFIG" "$PRODUCT_CONFIG_FILE"
+
+    # Fix product contexts
+    awk '{print "/system" $0}' "$PRODUCT_CONTEXTS_FILE" \
+    > "$PRODUCT_TEMP_CONTEXTS" && mv "$PRODUCT_TEMP_CONTEXTS" "$PRODUCT_CONTEXTS_FILE"
+
+    # Append cleaned product config into system config
+    cat "$PRODUCT_CONFIG_FILE" >> "$SYSTEM_CONFIG_FILE"
+
+    # Append cleaned product contexts into system contexts
+    cat "$PRODUCT_CONTEXTS_FILE" >> "$SYSTEM_CONTEXTS_FILE"
+
+    rm -rf "$EXTRACTED_FIRM_DIR"/config/product*
+    local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/system/product"
+}
+
+
+SEPARATE_PRODUCT() {
+    if [ "$#" -ne 1 ]; then
+        echo -e "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
+        return 1
+    fi
+
+    local EXTRACTED_FIRM_DIR="$1"
+
+	echo "- Separating product"
+    mv "${EXTRACTED_FIRM_DIR}/system/system/product" "${EXTRACTED_FIRM_DIR}/"
+	ln -s /product ${EXTRACTED_FIRM_DIR}/system/system/product
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/product"
+	mkdir "${EXTRACTED_FIRM_DIR}/system/product"
+
+    SYSTEM_FS_CONFIG="${EXTRACTED_FIRM_DIR}/config/system_fs_config"
+	SYSTEM_FILE_CONTEXTS="${EXTRACTED_FIRM_DIR}/config/system_file_contexts"
+    
+	PRODUCT_FS_CONFIG="${EXTRACTED_FIRM_DIR}/config/product_fs_config"
+	PRODUCT_FILE_CONTEXTS="${EXTRACTED_FIRM_DIR}/config/product_file_contexts"
+
+    # Process product_file_contexts
+    if grep -q '^/system/system/product' "$SYSTEM_FILE_CONTEXTS"; then
+        grep '^/system/system/product' "$SYSTEM_FILE_CONTEXTS" > "$PRODUCT_FILE_CONTEXTS"
+        sed -i '\|^/system/system/product|d' "$SYSTEM_FILE_CONTEXTS"
+        awk '{sub(/^\/system\/system\/product/, "/product"); print}' "$PRODUCT_FILE_CONTEXTS" > "$PRODUCT_FILE_CONTEXTS.tmp"  && \
+        mv "$PRODUCT_FILE_CONTEXTS.tmp" "$PRODUCT_FILE_CONTEXTS"
+
+        # Add object context line if missing
+		grep -qxF '/system/product u:object_r:system_file:s0' "$SYSTEM_FILE_CONTEXTS" || echo '/system/product u:object_r:system_file:s0' >> "$SYSTEM_FILE_CONTEXTS"
+		grep -qxF '/system/system/product u:object_r:system_file:s0' "$PRODUCT_FILE_CONTEXTS" || echo '/system/system/product u:object_r:system_file:s0' >> "$PRODUCT_FILE_CONTEXTS"
+
+        grep -qxF '/ u:object_r:system_file:s0' "$PRODUCT_FILE_CONTEXTS" || echo '/ u:object_r:system_file:s0' >> "$PRODUCT_FILE_CONTEXTS"
+		sort -u "$PRODUCT_FILE_CONTEXTS" -o "$PRODUCT_FILE_CONTEXTS"
+    fi
+
+    # Process product_fs_config
+    if grep -q '^system/system/product' "$SYSTEM_FS_CONFIG"; then
+        grep '^system/system/product' "$SYSTEM_FS_CONFIG" > "$PRODUCT_FS_CONFIG"
+        sed -i '\|^system/system/product|d' "$SYSTEM_FS_CONFIG"
+        awk '{sub(/^system\/system\/product/, "product"); print}' "$PRODUCT_FS_CONFIG" > "$PRODUCT_FS_CONFIG.tmp" &&  \
+	    mv "$PRODUCT_FS_CONFIG.tmp" "$PRODUCT_FS_CONFIG"
+
+        # Add default fs permissions if missing
+        grep -qxF 'system/product 0 0 0755' "$SYSTEM_FS_CONFIG" || echo 'system/product 0 0 0755' >> "$SYSTEM_FS_CONFIG"
+		grep -qxF 'system/system/product 0 0 0644' "$SYSTEM_FS_CONFIG" || echo 'system/system/product 0 0 0644' >> "$SYSTEM_FS_CONFIG"
+
+        grep -qxF '/ 0 0 0755' "$PRODUCT_FS_CONFIG" || echo '/ 0 0 0755' >> "$PRODUCT_FS_CONFIG"
+        grep -qxF 'product/ 0 0 0755' "$PRODUCT_FS_CONFIG" || echo 'product/ 0 0 0755' >> "$PRODUCT_FS_CONFIG"
+		sort -u "$PRODUCT_FS_CONFIG" -o "$PRODUCT_FS_CONFIG"
+    fi
+
+    local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/product"
+}
+
+
+ADJUST_PRODUCT() {
+    if [ "$#" -ne 1 ]; then
+        echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
+        return 1
+    fi
+
+    local EXTRACTED_FIRM_DIR="$1"
+
+    if [ "$STOCK_HAS_SEPARATE_PRODUCT" = "FALSE" ]; then
+        echo "- STOCK_HAS_SEPARATE_PRODUCT: $STOCK_HAS_SEPARATE_PRODUCT"
+
+        if [ -d "${EXTRACTED_FIRM_DIR}/system/system/product/etc" ]; then
+            local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/system/system/product"
+
+        elif [ -d "${EXTRACTED_FIRM_DIR}/system/product/etc" ]; then
+            local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/system/product"
+			
+		elif [ -d "${EXTRACTED_FIRM_DIR}/product/etc" ]; then
+		    ADD_PRODUCT_IN_SYSTEM_ROOT "$EXTRACTED_FIRM_DIR"
+        fi
+
+	elif [ "$STOCK_HAS_SEPARATE_PRODUCT" = "TRUE" ]; then
+        echo "STOCK_HAS_SEPARATE_PRODUCT: $STOCK_HAS_SEPARATE_PRODUCT"
+
+        if [ -d "${EXTRACTED_FIRM_DIR}/system/system/product/etc" ]; then
+            SEPARATE_PRODUCT "$EXTRACTED_FIRM_DIR"
+        fi
+    fi
+
+    echo "- TARGET_ROM_PRODUCT_DIR set to: $TARGET_ROM_PRODUCT_DIR"
+}
+
+
+GET_PRODUCT_DIR() {
+    if [ "$#" -ne 1 ]; then
+        echo "Usage: ${FUNCNAME[0]} <EXTRACTED_FIRM_DIR>"
+        return 1
+    fi
+
+    local EXTRACTED_FIRM_DIR="$1"
+
+    if [ -d "${EXTRACTED_FIRM_DIR}/product/etc" ]; then
+        local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/product"
+    elif [ -d "${EXTRACTED_FIRM_DIR}/system/product/etc" ]; then
+        local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/system/product"
+    elif [ -d "${EXTRACTED_FIRM_DIR}/system/system/product/etc" ]; then
+        local TARGET_ROM_PRODUCT_DIR="${EXTRACTED_FIRM_DIR}/system/system/product"
+    else
+        return 1
+    fi
+
+    echo "$TARGET_ROM_PRODUCT_DIR"
+}
+
+
 PATCH_SELINUX() {
     echo " "
 
@@ -1629,9 +1793,9 @@ APPLY_CUSTOM_FLOATING_FEATURE() {
     #========== COMMON ==========#
     UPDATE_FLOATING_FEATURE "$TARGET_ROM_FLOATING_FEATURE" "SEC_FLOATING_FEATURE_COMMON_CONFIG_SEP_CATEGORY" "sep_basic"
 
-    #============= AI ==========#
-    sed -i '/SEC_FLOATING_FEATURE_COMMON_DISABLE_NATIVE_AI/d' "$TARGET_ROM_FLOATING_FEATURE"
-    UPDATE_FLOATING_FEATURE "$TARGET_ROM_FLOATING_FEATURE" "SEC_FLOATING_FEATURE_VISION_SUPPORT_AI_MY_FAVORITE_CONTENTS" "TRUE"
+    # #============= AI ==========#
+    # sed -i '/SEC_FLOATING_FEATURE_COMMON_DISABLE_NATIVE_AI/d' "$TARGET_ROM_FLOATING_FEATURE"
+    # UPDATE_FLOATING_FEATURE "$TARGET_ROM_FLOATING_FEATURE" "SEC_FLOATING_FEATURE_VISION_SUPPORT_AI_MY_FAVORITE_CONTENTS" "TRUE"
 
 	#========== EDGE ==========#
     UPDATE_FLOATING_FEATURE "$TARGET_ROM_FLOATING_FEATURE" "SEC_FLOATING_FEATURE_COMMON_CONFIG_EDGE" "panel"
@@ -1729,6 +1893,10 @@ APPLY_STOCK_ROM_FLOATING_FEATURE() {
     UPDATE_FLOATING_FEATURE "$TARGET_ROM_FLOATING_FEATURE" \
     "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_DEFAULT_FONT_SIZE" \
     "$(GET_FF_VALUE "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_DEFAULT_FONT_SIZE" "$STOCK_ROM_FLOATING_FEATURE")"
+
+    UPDATE_FLOATING_FEATURE "$TARGET_ROM_FLOATING_FEATURE" \
+    "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_FCC_ID" \
+    "$(GET_FF_VALUE "SEC_FLOATING_FEATURE_SETTINGS_CONFIG_FCC_ID" "$STOCK_ROM_FLOATING_FEATURE")"
 
     #========== REFRESH RATE ==========#
     UPDATE_FLOATING_FEATURE "$TARGET_ROM_FLOATING_FEATURE" \
@@ -2011,6 +2179,7 @@ APPLY_STOCK_CONFIG() {
         local STOCK_VNDK_VERSION="$(grep -m1 '^STOCK_VNDK_VERSION=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
 		local STOCK_DUAL_VNDKS="$(grep -m1 '^STOCK_DUAL_VNDKS=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
         local STOCK_HAS_SEPARATE_SYSTEM_EXT="$(grep -m1 '^STOCK_HAS_SEPARATE_SYSTEM_EXT=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
+        local STOCK_HAS_SEPARATE_PRODUCT="$(grep -m1 '^STOCK_HAS_SEPARATE_PRODUCT=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
 		local STOCK_DEVICE_CPU_ABILIST="$(grep -m1 '^STOCK_DEVICE_CPU_ABILIST=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
 		local STOCK_DEVICE_CHIPSET="$(grep -m1 '^STOCK_DEVICE_CHIPSET=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
 		local USE_ALT_SDHMS_APP="$(grep -m1 '^USE_ALT_SDHMS_APP=' "${DEVICES_DIR}/$STOCK_DEVICE/config" | cut -d= -f2 | tr -d '\r')"
@@ -2042,6 +2211,9 @@ APPLY_STOCK_CONFIG() {
 
 	# ADJUST SYSTEM_EXT PARTITION.
     ADJUST_SYSTEM_EXT "$EXTRACTED_FIRM_DIR"
+
+    # ADJUST PRODUCT PARTITION.
+    ADJUST_PRODUCT "$EXTRACTED_FIRM_DIR"
 
 	# FIX VNDK.
 	FIX_VNDK "$EXTRACTED_FIRM_DIR"
@@ -2075,10 +2247,8 @@ APPLY_STOCK_CONFIG() {
 	fi
 
 	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/init"/rscmgr*.rc
-	find "${EXTRACTED_FIRM_DIR}/system/system/media" -maxdepth 1 -type f \( -iname "*.spi" -o -iname "*.qmg" -o -iname "*.txt" \) -delete
 	rm -rf "$EXTRACTED_FIRM_DIR"/product/overlay/framework-res*auto_generated_rro_product.apk
 	rm -rf ${EXTRACTED_FIRM_DIR}/product/overlay/SystemUI*auto_generated_rro_product.apk
-	rm -rf ${EXTRACTED_FIRM_DIR}/product/overlay/TeleService*auto_generated_rro_product.apk
 
 	cp -a "${DEVICES_DIR}/$STOCK_DEVICE/Stock/." "${EXTRACTED_FIRM_DIR}/"
 
@@ -2494,6 +2664,81 @@ APPLY_CUSTOM_FEATURES() {
 	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.telephony.sim_slots.count" "2"
 	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.surface_flinger.protected_contents" "true"
 	BUILD_PROP "$EXTRACTED_FIRM_DIR" "product" "ro.product.locale" "en-US"
+
+    echo -e "- Knox Patch."
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "security.mdf.result" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "security.mdf" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.mdf.ver" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.mdf.release" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.wlan.ver" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.wlan.release" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.bt.ver" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.bt.release" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.bio.ver" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.bio.release" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.mdf.ux" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.fips.ux" "Disabled"
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.fips_bssl.ver" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.fips_skc.ver" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.security.fips_scrypto.ver" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.config.dmverity" "N"
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "ro.config.iccc_version" ""
+	BUILD_PROP "$EXTRACTED_FIRM_DIR" "system" "wlan.wfd.hdcp" "disable"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/public.libraries-wsm.samsung.txt"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/libhal.wsm.samsung.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/vendor.samsung.hardware.security.wsm.service-V1-ndk.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib64/libhal.wsm.samsung.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib64/vendor.samsung.hardware.security.wsm.service-V1-ndk.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/public.libraries-wsm.samsung.txt"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/bin/dualdard"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/bin/sdp_cryptod"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/init/dualdard.rc"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/init/kpp.init.rc"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/init/kss.init.rc"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/init/sdp_cryptod.rc"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/permissions/privapp-permissions-com.samsung.android.hdmapp.xml"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/permissions/privapp-permissions-com.samsung.android.kgclient.xml"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/permissions/privapp-permissions-com.samsung.android.knox.kfbp.xml"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/permissions/privapp-permissions-com.samsung.android.knox.knnr.xml"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/permissions/privapp-permissions-com.samsung.android.knox.mpos.xml"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/permissions/privapp-permissions-com.samsung.android.knox.pushmanager.xml"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/permissions/privapp-permissions-com.samsung.android.knox.sandbox.xml"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/permissions/privapp-permissions-com.samsung.android.knox.zt.framework.xml"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/permissions/signature-permissions-com.samsung.android.kgclient.xml"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/etc/sysconfig/preinstalled-packages-com.samsung.android.coldwalletservice.xml"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/android.hardware.weaver@1.0.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/hidl_comm_ddar_client.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/libdualdar.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/libepm.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/libhermes_cred.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/libkeyutils.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/libknox_filemanager.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/libmdfpp_req.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/libpersona.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/libsdp_crypto.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/libsdp_kekm.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/libsdp_sdk.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib/vendor.samsung.hardware.tlc.ddar@1.0.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib64/android.hardware.weaver@1.0.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib64/hidl_comm_ddar_client.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib64/libdualdar.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib64/libmdfpp_req.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib64/libsdp_crypto.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib64/libsdp_kekm.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib64/libsdp_sdk.so"
+	rm -rf "${EXTRACTED_FIRM_DIR}/system/system/lib64/vendor.samsung.hardware.tlc.ddar@1.0.so"
+
+    echo -e "Updating build date."
+    BUILD_PROP "$FIRM_DIR" "system" "ro.build.date.utc" "$(date +%s)"
+    BUILD_PROP "$FIRM_DIR" "product" "ro.build.date.utc" "$(date +%s)"
+    BUILD_PROP "$FIRM_DIR" "system" "ro.build.date" "$(LANG=C date '+%a %b %e %H:%M:%S %Z %Y')"
+    BUILD_PROP "$FIRM_DIR" "product" "ro.build.date" "$(LANG=C date '+%a %b %e %H:%M:%S %Z %Y')"
+    BUILD_PROP "$FIRM_DIR" "system" "ro.system.build.date.utc" "$(date +%s)"
+    BUILD_PROP "$FIRM_DIR" "system_ext" "ro.system_ext.build.date.utc" "$(date +%s)"
+    BUILD_PROP "$FIRM_DIR" "product" "ro.product.build.date.utc" "$(date +%s)"
+    BUILD_PROP "$FIRM_DIR" "system" "ro.system.build.date" "$(LANG=C date '+%a %b %e %H:%M:%S %Z %Y')"
+    BUILD_PROP "$FIRM_DIR" "system_ext" "ro.system_ext.build.date" "$(LANG=C date '+%a %b %e %H:%M:%S %Z %Y')"
+    BUILD_PROP "$FIRM_DIR" "product" "ro.product.build.date" "$(LANG=C date '+%a %b %e %H:%M:%S %Z %Y')"
 
     # Apply custom floating feature.
 	APPLY_CUSTOM_FLOATING_FEATURE "$EXTRACTED_FIRM_DIR"

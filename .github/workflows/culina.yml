@@ -1,4 +1,4 @@
-name: QuantumROM Tools
+name: Culina ROManitatis
 
 on:
   workflow_dispatch:
@@ -69,11 +69,12 @@ on:
           - SM-M558B
           - SM-M566B
           - SM-P613
+          - SM-P613-202604
           - SM-S901B
           - SM-S901E
           - SM-S911B
           - None
-        default: "SM-A225F"
+        default: ""
 
       USE_UI_8_TETHERING_APEX:
         description: "Set True if your kernel BPF version is 5.4 (lower than 5.10)."
@@ -87,12 +88,12 @@ on:
       TARGET_DEVICE:
         description: "TARGET_DEVICE_MODEL."
         required: true
-        default: "SM-A346E"
+        default: ""
 
       TARGET_DEVICE_CSC_OR_DOWNLOAD_LINK:
         description: "Input target device CSC code or direct download link."
         required: true
-        default: "BKD"
+        default: "EUX"
 
       TARGET_FW_VERSION:
         description: "Specific Samsung firmware version (PDA/CSC/MODEM) OR (AP/CSC/CP)"
@@ -133,7 +134,7 @@ on:
         options:
           - "True"
           - "False"
-        default: "True"
+        default: "False"
 
       ADD_CHINA_SMART_MANAGER:
         description: "Add china smart manager (True/False)"
@@ -142,7 +143,7 @@ on:
         options:
           - "True"
           - "False"
-        default: "True"
+        default: "False"
 
       ADD_SAMSUNG_FLAGSHIP_APPS:
         description: "Add samsung flagship apps (True/False)"
@@ -151,7 +152,7 @@ on:
         options:
           - "True"
           - "False"
-        default: "True"
+        default: "False"
 
       ADD_CUSTOM_FEATURES:
         description: "Add samsung custom features (True/False)"
@@ -201,7 +202,7 @@ on:
 
 jobs:
   build:
-    name: Start QuantumROM Tools
+    name: ROManitatem aedifica
     runs-on: ubuntu-22.04
 
     steps:
@@ -241,7 +242,7 @@ jobs:
 
       - name: Validate STOCK_DEVICE - ${{ inputs.STOCK_DEVICE }}
         run: |
-          REPO="SN-Abdullah-Al-Noman/QuantumROM"
+          REPO="AlfCraft07/culina"
           BRANCH="Devices"
 
           source "$(pwd)/scripts/git_utils.sh"
@@ -255,7 +256,7 @@ jobs:
               fi
 
               echo "✅ Device supported: $STOCK_DEVICE"
-              GIT_SPARSE_DOWNLOAD "SN-Abdullah-Al-Noman/QuantumROM" "Devices" "$STOCK_DEVICE" \
+              GIT_SPARSE_DOWNLOAD "AlfCraft07/culina" "Devices" "$STOCK_DEVICE" \
                   "$(pwd)/QuantumROM/Devices/$STOCK_DEVICE"
           else
               echo "ℹ️ STOCK_DEVICE is set to None."
